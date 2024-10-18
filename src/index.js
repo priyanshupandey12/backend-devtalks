@@ -16,11 +16,13 @@ const userRouter=require('../src/router/user.route');
 const profileRouter=require('../src/router/profile.router');
 const connectionRouter=require('../src/router/connection.router');
 const pendingrequestRouter=require('../src/router/showconnection.router');
+const projectRouter=require('../src/router/project.router');
 
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
 app.use('/api/v1/connection',connectionRouter);
 app.use('/api/v1/pending',pendingrequestRouter);
+app.use('/api/v1/project',projectRouter);
 
 connectDB().then(()=>{
   console.log('database connected')
