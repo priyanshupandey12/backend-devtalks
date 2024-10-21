@@ -19,7 +19,7 @@ const projectSchema=mongoose.Schema({
    },
 
    ownerId:{
-    type:String,
+    type: mongoose.Schema.Types.ObjectId,
      ref:'User',
      required:true
    },
@@ -53,25 +53,38 @@ const projectSchema=mongoose.Schema({
     }
   }],
 
-   category: {
-    type: String
+  category: {
+    type: [String],
+    required: true,
+    enum: ['web', 'mobile', 'desktop', 'backend']
   },
 
 
-   Collaborators: [{ 
-     type: mongoose.Schema.Types.ObjectId,
-     ref: 'User' 
-      }],
+  collaborators: [{ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    role: { type: String, required: true }
+  }],
 
-    attachments: [{
-      fileName: String,
-      fileUrl: String,
-      uploadDate: Date
-      }]
+  attachments: [{
+    fileName: { type: String, required: true },
+    fileUrl: { type: String, required: true },
+    fileSize: { type: Number, required: true },
+    uploadDate: { type: Date, required: true }
+  }],
    
 
 },
   {timestamps:true});
 
+
+  projectSchema.methods.addCollaborator = async function (collaboratorId, role) {
+    const project = this;
+    project.collaborators.push({ userId: collaboratorId, role });
+
+    return project;
+  };
+
+
 const Project=mongoose.model('Project',projectSchema);
+
  module.exports=Project
