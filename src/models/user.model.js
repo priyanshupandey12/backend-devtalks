@@ -56,10 +56,10 @@ userSchema.methods.verifyPassword=async function(passwordbyuser){
 
   const user=this;
   const hashedPassword=user.password;
-  console.log('Verifying password');
-  console.log('Stored password hash:', hashedPassword);
+
+
   const isMatch=await bcrypt.compare(passwordbyuser,hashedPassword);
-  console.log('Password match:', isMatch);
+
   return isMatch
 }
 const User=mongoose.model('User',userSchema);

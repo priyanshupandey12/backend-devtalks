@@ -46,7 +46,13 @@ const projectSchema=mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId, 
       ref: 'User' 
           },
-    text: String,
+      text: 
+      {
+            type: String,
+            required: true,
+            minlength: 3,
+            maxlength: 500
+          },
     createdAt: { 
       type: Date, 
       default: Date.now 
@@ -56,21 +62,47 @@ const projectSchema=mongoose.Schema({
   category: {
     type: [String],
     required: true,
-    enum: ['web', 'mobile', 'desktop', 'backend']
+    enum: ['web', 'mobile', 'desktop', 'backend'],
+    validate:{
+      validator: function(value) {
+        return value.length > 0;
+      },
+      message: 'Please provide at least one category'
+    }
   },
 
 
-  collaborators: [{ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    role: { type: String, required: true }
+  collaborators: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    role: {
+      type: String,
+      required: true
+    },
+    inviteStatus: {
+      type: String,
+      enum: 
+      {
+       values: ['Pending', 'Accepted', 'Rejected'],
+        message: `{VALUE} is not supported`
+      },
+      default: 'Pending'
+    }
   }],
 
-  attachments: [{
+  attachments:  [{
     fileName: { type: String, required: true },
     fileUrl: { type: String, required: true },
-    fileSize: { type: Number, required: true },
+    fileSize: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 10485760 // Max 10MB
+    },
     uploadDate: { type: Date, required: true }
-  }],
+  }]
    
 
 },
