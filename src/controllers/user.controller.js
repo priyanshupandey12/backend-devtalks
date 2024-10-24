@@ -64,4 +64,32 @@ const logOut=async(req,res)=>{
 res.cookie('token',null,{expires:new Date(Date.now())});
 return res.status(200).json('logout Succesfully');
 }
-module.exports={signUp,loginUp,logOut}
+
+const changePassword=async(req,res)=>{
+  try {
+   const {oldPassword,newPassword}=req.body;
+   
+   if(!oldPassword || !newPassword){
+    throw new Error('oldPassword or newPassword is not valid'); 
+  }
+  const user=req.user;
+   const isPasswordValid=await user.verifyPassword(oldPassword);
+   
+   if(!isPasswordValid){
+   throw new Error('oldPassword is not valid'); 
+  }
+
+  user.password=await bcrypt.hash(newPassword,10);
+
+  await user.save();
+   
+  
+  return res.status(200).json({message:'password changed successfully',data:user});
+  } catch (error) {
+    return res.status(400).json("ERROR : "+error.message);
+  }
+
+}
+
+
+module.exports={signUp,loginUp,logOut,changePassword}
