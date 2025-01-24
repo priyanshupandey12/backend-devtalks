@@ -4,7 +4,7 @@
   "description": "a website for devs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node/src/index.js"
   },
   "author": "priyanshu",
   "license": "ISC",
@@ -15,6 +15,8 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.6.3",
+    "razorpay": "^2.9.5",
+    "socket.io": "^4.8.1",
     "validator": "^13.12.0"
   }
 }

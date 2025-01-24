@@ -8,7 +8,7 @@ const showpendingConnection = async (req, res) => {
     const loggedInUser = req.user;
 
 
-    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName']);
+    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl']);
 
  
 
