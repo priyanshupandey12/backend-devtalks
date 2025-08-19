@@ -1,6 +1,7 @@
+require('dotenv').config()
 const express=require('express')
 const cookieParser=require('cookie-parser');
-const connectDB=require('../config/database');
+const connectDB=require('./config/database');
 const app=express();
 const cors=require('cors');
 const http=require('http');
@@ -14,14 +15,14 @@ app.use(cors
 app.use(express.json());
 app.use(cookieParser());
 
-const userRouter=require('../src/router/user.route');
-const profileRouter=require('../src/router/profile.router');
-const connectionRouter=require('../src/router/connection.router');
-const pendingrequestRouter=require('../src/router/showconnection.router');
-const projectRouter=require('../src/router/project.router');
-const chatRouter=require('../src/router/chat.router')
-const paymentRouter=require('../src/router/payment.router')
-const intiliazeSocket=require('../src/utils/socket')
+const userRouter=require('./src/router/user.route');
+const profileRouter=require('./src/router/profile.router');
+const connectionRouter=require('./src/router/connection.router');
+const pendingrequestRouter=require('./src/router/showconnection.router');
+const projectRouter=require('./src/router/project.router');
+const chatRouter=require('./src/router/chat.router')
+const paymentRouter=require('./src/router/payment.router')
+const intiliazeSocket=require('./src/utils/socket')
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
 app.use('/api/v1/connection',connectionRouter);
