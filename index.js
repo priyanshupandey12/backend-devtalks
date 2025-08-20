@@ -5,7 +5,7 @@ const connectDB=require('./config/database');
 const app=express();
 const cors=require('cors');
 const http=require('http');
-
+const { startGithubActivityCron }=require('./src/utils/githubcron')
 app.use(cors
   ({
     origin:'http://localhost:5173',
@@ -52,6 +52,9 @@ intiliazeSocket(server)
 
 connectDB().then(()=>{
   console.log('database connected')
+
+   startGithubActivityCron();
+    console.log('✅ GitHub activity cron job initialized')
   server.listen(7777,()=>{
     console.log('server is running on port 7777')
   })

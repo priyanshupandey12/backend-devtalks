@@ -38,7 +38,50 @@ const userSchema=mongoose.Schema({
   },
   skills:{
     type:[String],
-  }
+  } ,
+    experienceLevel: {
+    type: String,
+    enum: ['Student', 'Beginner', 'Intermediate', 'Senior'],
+    default: 'Beginner'
+  },
+
+    location: {
+    type: String, // e.g., "Patna, Bihar"
+    default: ''
+  },
+  timezone: {
+    type: String, // e.g., "Asia/Kolkata"
+    default: ''
+  },
+  commitment: {
+    hoursPerWeek: { type: String, default: '5-10 hours' },
+    projectDuration: { type: String, default: '1-3 months' }
+  },
+
+  primaryGoal: {
+    type: String,
+    enum: ['Build a Startup', 'Portfolio Project', 'Learn a New Skill', 'Hackathon', 'Just for Fun'],
+    default: 'Portfolio Project'
+  },
+  userRole: {
+    type: String,
+    enum: ['Project Owner', 'Looking to Join'],
+    default: 'Looking to Join'
+  },
+
+  links: {
+    githubUsername: { type: String, default: '' },
+    linkedin: { type: String, default: '' },
+    portfolio: { type: String, default: '' }
+  },
+githubActivity: {
+  last7dCommits: { type: Number, default: 0 },
+  last3mCommits: { type: Number, default: 0 },
+  lastChecked: { type: Date, default: null }
+},
+isGithubActive7d: { type: Boolean, default: false },
+isGithubActive3m: { type: Boolean, default: false },
+
 
 },{timestamps:true});
 
