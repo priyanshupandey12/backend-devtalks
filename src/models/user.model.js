@@ -45,10 +45,18 @@ const userSchema=mongoose.Schema({
     default: 'Beginner'
   },
 
-    location: {
-    type: String, // e.g., "Patna, Bihar"
-    default: ''
+ location: {
+  type: {
+    type: String,
+    enum: ['Point'],
+    default: 'Point'
   },
+  coordinates: {
+    type: [Number], 
+    default: [0, 0]
+  },
+  address: { type: String, default: '' } 
+},
   timezone: {
     type: String, // e.g., "Asia/Kolkata"
     default: ''
@@ -84,6 +92,9 @@ isGithubActive3m: { type: Boolean, default: false },
 
 
 },{timestamps:true});
+
+
+userSchema.index({ "location.coordinates": "2dsphere" });
 
 
 userSchema.methods.getJWTToken=async function(){

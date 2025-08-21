@@ -63,7 +63,7 @@ function calculateActivityScore(contributions) {
 
 
 const startGithubActivityCron = () => {
-  cron.schedule("0 2 * * *", async () => {
+  cron.schedule("* * * * *", async () => {
   
 
     try {

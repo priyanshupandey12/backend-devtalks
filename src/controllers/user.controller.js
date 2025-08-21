@@ -2,7 +2,7 @@ const User=require('../models/user.model');
 const {validatesignUpData}=require('../utils/validate');
 const bcrypt=require('bcrypt')
 const jwt=require('jsonwebtoken');
-
+const geocodeAddress=require('../utils/geocode');
 
 const signUp=async(req,res)=>{
 
@@ -32,6 +32,21 @@ const signUp=async(req,res)=>{
    //encrpyted the password
    const passwordhash=await bcrypt.hash(password,10);
 
+    let geoLocation = {
+      type: "Point",
+      coordinates: [0, 0],
+      address: ""
+    };
+
+    if (location) {
+      const [lng, lat] = await geocodeAddress(location);
+      geoLocation = {
+        type: "Point",
+        coordinates: [lng, lat],
+        address: location
+      };
+    }
+
    const newUser=await User.create({
     firstName,
     lastName,
@@ -42,7 +57,7 @@ const signUp=async(req,res)=>{
       photoUrl: photoUrl || "",
      skills: skills || [],
       experienceLevel: experienceLevel || "Beginner",
-      location: location || "",
+      location: geoLocation,
       timezone: timezone || "",
       commitment: commitment || { hoursPerWeek: "5-10 hours", projectDuration: "1-3 months" },
       primaryGoal: primaryGoal || "Portfolio Project",
@@ -128,117 +143,220 @@ const changePassword=async(req,res)=>{
 
 }
 
-const getAllusers=async(req,res)=>{
-   try {
-     const currentUserId=req.user._id;
+// const getAllusers=async(req,res)=>{
+//    try {
+//      const currentUserId=req.user._id;
 
-       const {
-        skills,
+//        const {
+//         skills,
+//       experienceLevel,
+//        activeWindow,
+//       locationRadius = 50, // km
+//       primaryGoal,
+//       hoursPerWeek,
+//       githubActive,
+//       page = 1,
+//       limit = 10
+//     } = req.query;
+
+//     const currentUser = await User.findById(currentUserId);
+
+//     if (!currentUser || !currentUser.location?.coordinates?.length) {
+//       throw new Error("Current user has no valid location");
+//     }
+//     let filterQuery={
+//       _id:{$ne:currentUserId}
+//     }
+
+
+  
+//     if (activeWindow === "7d") {
+//       filterQuery.isGithubActive7d = true;
+//     } else if (activeWindow === "3m") {
+//       filterQuery.isGithubActive3m = true;
+//     }
+//      if (experienceLevel) {
+//       const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
+//       filterQuery.experienceLevel = { $in: expLevels };
+//     }
+
+//     if(skills) {
+//       const skillArray=Array.isArray(skills) ? skills :skills.split(',');
+//       filterQuery.skills={
+//           $in: skillArray.map(skill => new RegExp(skill.trim(), 'i')) 
+//       }
+//     }
+
+//      if (primaryGoal) {
+//       const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
+//       filterQuery.primaryGoal = { $in: goals };
+//     }
+    
+//     if (hoursPerWeek) {
+//       filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+//     }
+    
+
+    
+ 
+// const users = await User.aggregate([
+//       {
+//         $geoNear: {
+//           near: { type: "Point", coordinates: currentUser.location.coordinates },
+//           distanceField: "distance",
+//           maxDistance: parseInt(locationRadius) * 1000,
+//           spherical: true,
+//           query: filterQuery,
+//           key: "location.coordinates" 
+//         }
+//       },
+//       { $skip: (parseInt(page) - 1) * parseInt(limit) },
+//       { $limit: parseInt(limit) }
+//     ]);
+
+
+//     if(users.length==0) {
+//       return res.status(200).json("User not found")
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       users,
+//       pagination: {
+//         current: parseInt(page),
+//         limit: parseInt(limit),
+//         total: users.length,
+//       },
+//       appliedFilters: {
+//         skills,
+//         experienceLevel,
+//         locationRadius: parseInt(locationRadius),
+//         primaryGoal,
+//         hoursPerWeek,
+//         githubActive: githubActive === "true",
+//         activeWindow
+//       }
+//     });
+
+
+//    } catch (error) {
+//     console.error('Error in getAllUsers:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Internal server error',
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//    }
+// }
+
+const getAllusers = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+
+    const {
+      skills,
       experienceLevel,
-      location,
-       activeWindow,
-      locationRadius = 50, // km
+      activeWindow,
+      locationRadius,
       primaryGoal,
       hoursPerWeek,
-      githubActive,
       page = 1,
       limit = 10
     } = req.query;
 
-    let filterQuery={
-      _id:{$ne:currentUserId}
+    const currentUser = await User.findById(currentUserId);
+
+    if (!currentUser) {
+      throw new Error("Current user not found");
     }
 
+    let filterQuery = {
+      _id: { $ne: currentUserId }
+    };
 
-  
+    // Apply filters
     if (activeWindow === "7d") {
       filterQuery.isGithubActive7d = true;
     } else if (activeWindow === "3m") {
       filterQuery.isGithubActive3m = true;
     }
-     if (experienceLevel) {
+
+    if (experienceLevel) {
       const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
       filterQuery.experienceLevel = { $in: expLevels };
     }
 
-    if(skills) {
-      const skillArray=Array.isArray(skills) ? skills :skills.split(',');
-      filterQuery.skills={
-          $in: skillArray.map(skill => new RegExp(skill.trim(), 'i')) 
-      }
+    if (skills) {
+      const skillArray = Array.isArray(skills) ? skills : skills.split(',');
+      filterQuery.skills = {
+        $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
+      };
     }
 
-     if (primaryGoal) {
+    if (primaryGoal) {
       const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
       filterQuery.primaryGoal = { $in: goals };
     }
-    
+
     if (hoursPerWeek) {
       filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
     }
-    
 
-     const currentUser = await User.findById(currentUserId);
+    let users = [];
 
-     let users = await User.find(filterQuery)
-      .select('-password') 
-      .lean(); 
-    
-  
-    if (location && currentUser.location) {
-      users = users.filter(user => {
-        const distance = calculateDistance(currentUser.location, user.location);
-        return distance <= parseInt(locationRadius);
-      });
+   
+    if (currentUser.location?.coordinates?.length && parseInt(locationRadius) > 0) {
+      users = await User.aggregate([
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: currentUser.location.coordinates },
+            distanceField: "distance",
+            maxDistance: parseInt(locationRadius) * 1000,
+            spherical: true,
+            query: filterQuery,
+            key: "location.coordinates"
+          }
+        },
+        { $skip: (parseInt(page) - 1) * parseInt(limit) },
+        { $limit: parseInt(limit) }
+      ]);
+    } else {
+      
+      users = await User.find(filterQuery)
+        .skip((parseInt(page) - 1) * parseInt(limit))
+        .limit(parseInt(limit));
     }
- 
 
-     const startIndex = (parseInt(page) - 1) * parseInt(limit);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedUsers = users.slice(startIndex, endIndex);
+    if (users.length === 0) {
+      return res.status(200).json("User not found");
+    }
 
-    const response = {
+    res.status(200).json({
       success: true,
-      users: paginatedUsers,
+      users,
       pagination: {
         current: parseInt(page),
         limit: parseInt(limit),
-        total: users.length,
-        pages: Math.ceil(users.length / parseInt(limit))
+        total: users.length
       },
       appliedFilters: {
         skills,
         experienceLevel,
-        location,
         locationRadius: parseInt(locationRadius),
         primaryGoal,
         hoursPerWeek,
-        githubActive: githubActive === 'true',
-          activeWindow
-      },
-
-          stats: {
-        totalMatches: users.length,
-        activeIn7d: users.filter(u => u.isGithubActive7d).length,
-        activeIn3m: users.filter(u => u.isGithubActive3m).length
+        activeWindow
       }
-    };
-  
-
-    
-    res.status(200).json(response);
-
-
-   } catch (error) {
-    console.error('Error in getAllUsers:', error);
+    });
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
     });
-   }
-}
-
+  }
+};
 
 
 module.exports={signUp,loginUp,logOut,changePassword,getAllusers}

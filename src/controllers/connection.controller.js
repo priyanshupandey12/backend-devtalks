@@ -7,7 +7,7 @@ const sendRequest = async (req, res) => {
     const fromuserId = req.user._id;
     const toconnectionId = req.params.toconnectionId;
     const status = req.params.status;
-    console.log(fromuserId, toconnectionId, status);
+    
 
     const allowedStatus = ['ignored', 'Interested'];
     if (!allowedStatus.includes(status)) {

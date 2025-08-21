@@ -13,7 +13,7 @@ const validatesignUpData=(req)=>{
 }
 
 const validateProfileData = (req) => {
-  const allowedFields = ['firstName', 'lastName', 'gender', 'emailId', 'description', 'photoUrl', 'skills'];
+  const allowedFields = ['firstName', 'lastName', 'gender', 'emailId', 'description', 'photoUrl', 'skills','location'];
   return Object.keys(req.body).every(field => allowedFields.includes(field));
 };
 
