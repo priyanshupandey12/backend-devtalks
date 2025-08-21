@@ -7,7 +7,7 @@ const userAuth=async(req,res,next)=>{
     //read the token from cookies
     const  token=req.cookies.token;
 
-    const decodedObj=await jwt.verify(token,'DevTalks2021');
+    const decodedObj=await jwt.verify(token,process.env.JWT_SECRET_KEY);
      const _id=decodedObj._id;
      const user=await User.findById(_id);
      if(!user){

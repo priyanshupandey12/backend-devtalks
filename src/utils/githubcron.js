@@ -1,6 +1,8 @@
 const axios=require('axios');
 const cron = require("node-cron");
 const User=require('../models/user.model')
+
+
 async function getGithubActivity(username, sinceDate) {
   const query = `
     query($login: String!,  $since: DateTime!, $until: DateTime!) {
@@ -63,7 +65,7 @@ function calculateActivityScore(contributions) {
 
 
 const startGithubActivityCron = () => {
-  cron.schedule("* * * * *", async () => {
+  cron.schedule("0 2 * * *", async () => {
   
 
     try {
@@ -143,7 +145,6 @@ const startGithubActivityCron = () => {
     timezone: "Asia/Kolkata"
   });
 
-  console.log('✅ GitHub activity cron job scheduled (daily at 2 AM IST)');
 };
 
 module.exports={startGithubActivityCron,getGithubActivity}

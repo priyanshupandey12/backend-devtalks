@@ -41,20 +41,10 @@ intiliazeSocket(server)
 
 
 
-
-
-
-
-
-
-
-
-
 connectDB().then(()=>{
   console.log('database connected')
 
    startGithubActivityCron();
-    console.log('✅ GitHub activity cron job initialized')
   server.listen(7777,()=>{
     console.log('server is running on port 7777')
   })
