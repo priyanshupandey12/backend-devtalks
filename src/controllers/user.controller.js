@@ -145,114 +145,114 @@ const changePassword=async(req,res)=>{
 
 
 
-const getAllusers = async (req, res) => {
-  try {
-    const currentUserId = req.user._id;
+// const getAllusers = async (req, res) => {
+//   try {
+//     const currentUserId = req.user._id;
 
-    const {
-      skills,
-      experienceLevel,
-      activeWindow,
-      locationRadius,
-      primaryGoal,
-      hoursPerWeek,
-      page = 1,
-      limit = 10
-    } = req.query;
+//     const {
+//       skills,
+//       experienceLevel,
+//       activeWindow,
+//       locationRadius,
+//       primaryGoal,
+//       hoursPerWeek,
+//       page = 1,
+//       limit = 10
+//     } = req.query;
 
-    const currentUser = await User.findById(currentUserId);
+//     const currentUser = await User.findById(currentUserId);
 
-    if (!currentUser) {
-      throw new Error("Current user not found");
-    }
+//     if (!currentUser) {
+//       throw new Error("Current user not found");
+//     }
 
-    let filterQuery = {
-      _id: { $ne: currentUserId }
-    };
+//     let filterQuery = {
+//       _id: { $ne: currentUserId }
+//     };
 
-    // Apply filters
-    if (activeWindow === "7d") {
-      filterQuery.isGithubActive7d = true;
-    } else if (activeWindow === "3m") {
-      filterQuery.isGithubActive3m = true;
-    }
+//     // Apply filters
+//     if (activeWindow === "7d") {
+//       filterQuery.isGithubActive7d = true;
+//     } else if (activeWindow === "3m") {
+//       filterQuery.isGithubActive3m = true;
+//     }
 
-    if (experienceLevel) {
-      const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
-      filterQuery.experienceLevel = { $in: expLevels };
-    }
+//     if (experienceLevel) {
+//       const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
+//       filterQuery.experienceLevel = { $in: expLevels };
+//     }
 
-    if (skills) {
-      const skillArray = Array.isArray(skills) ? skills : skills.split(',');
-      filterQuery.skills = {
-        $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
-      };
-    }
+//     if (skills) {
+//       const skillArray = Array.isArray(skills) ? skills : skills.split(',');
+//       filterQuery.skills = {
+//         $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
+//       };
+//     }
 
-    if (primaryGoal) {
-      const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
-      filterQuery.primaryGoal = { $in: goals };
-    }
+//     if (primaryGoal) {
+//       const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
+//       filterQuery.primaryGoal = { $in: goals };
+//     }
 
-    if (hoursPerWeek) {
-      filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
-    }
+//     if (hoursPerWeek) {
+//       filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+//     }
 
-    let users = [];
+//     let users = [];
 
    
-    if (currentUser.location?.coordinates?.length && parseInt(locationRadius) > 0) {
-      users = await User.aggregate([
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: currentUser.location.coordinates },
-            distanceField: "distance",
-            maxDistance: parseInt(locationRadius) * 1000,
-            spherical: true,
-            query: filterQuery,
-            key: "location.coordinates"
-          }
-        },
-        { $skip: (parseInt(page) - 1) * parseInt(limit) },
-        { $limit: parseInt(limit) }
-      ]);
-    } else {
+//     if (currentUser.location?.coordinates?.length && parseInt(locationRadius) > 0) {
+//       users = await User.aggregate([
+//         {
+//           $geoNear: {
+//             near: { type: "Point", coordinates: currentUser.location.coordinates },
+//             distanceField: "distance",
+//             maxDistance: parseInt(locationRadius) * 1000,
+//             spherical: true,
+//             query: filterQuery,
+//             key: "location.coordinates"
+//           }
+//         },
+//         { $skip: (parseInt(page) - 1) * parseInt(limit) },
+//         { $limit: parseInt(limit) }
+//       ]);
+//     } else {
       
-      users = await User.find(filterQuery)
-        .skip((parseInt(page) - 1) * parseInt(limit))
-        .limit(parseInt(limit));
-    }
+//       users = await User.find(filterQuery)
+//         .skip((parseInt(page) - 1) * parseInt(limit))
+//         .limit(parseInt(limit));
+//     }
 
-    if (users.length === 0) {
-      return res.status(200).json("User not found");
-    }
+//     if (users.length === 0) {
+//       return res.status(200).json("User not found");
+//     }
 
-    res.status(200).json({
-      success: true,
-      users,
-      pagination: {
-        current: parseInt(page),
-        limit: parseInt(limit),
-        total: users.length
-      },
-      appliedFilters: {
-        skills,
-        experienceLevel,
-        locationRadius: parseInt(locationRadius),
-        primaryGoal,
-        hoursPerWeek,
-        activeWindow
-      }
-    });
-  } catch (error) {
-    console.error("Error in getAllUsers:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       users,
+//       pagination: {
+//         current: parseInt(page),
+//         limit: parseInt(limit),
+//         total: users.length
+//       },
+//       appliedFilters: {
+//         skills,
+//         experienceLevel,
+//         locationRadius: parseInt(locationRadius),
+//         primaryGoal,
+//         hoursPerWeek,
+//         activeWindow
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Error in getAllUsers:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: process.env.NODE_ENV === "development" ? error.message : undefined
+//     });
+//   }
+// };
 
 
-module.exports={signUp,loginUp,logOut,changePassword,getAllusers}
+module.exports={signUp,loginUp,logOut,changePassword}

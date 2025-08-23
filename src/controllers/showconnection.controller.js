@@ -72,45 +72,229 @@ const acceptingConnection = async (req, res) => {
 }
 
 const choosingCardConnection = async (req, res) => {
-try {
-  const feedshow=['firstName', 'lastName','photoUrl' ,'skills' ,'description', 'gender']
-  const loggedInUser = req.user;
-  const page=parseInt(req.query.page) || 1;
-  let limit=parseInt(req.query.limit) || 10;
-  limit=limit>50?50:limit
+ try {
+    const currentUserId = req.user._id;
 
-  const connectionRequest = await Connection.find({
-    $or: 
-    [ 
-    { fromuserId: loggedInUser._id }, 
-    { toconnectionId: loggedInUser._id } 
-  ]
-  }).select('fromuserId toconnectionId');
+    // Extract query parameters
+    const {
+      skills,
+      experienceLevel,
+      activeWindow,
+      locationRadius,
+      primaryGoal,
+      hoursPerWeek,
+      page = 1,
+      limit = 10,
+      useAdvancedFilters = false // New parameter to determine filter mode
+    } = req.query;
 
-  const hidefromfeed= new Set();
-  connectionRequest.forEach(req => {
-    hidefromfeed.add(req.fromuserId.toString());
-    hidefromfeed.add(req.toconnectionId.toString());
-  });
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Current user not found"
+      });
+    }
 
-   const users = await User.find({
-    $and: 
-    [
-    { _id: { $nin: Array.from(hidefromfeed) } },
-    { _id: { $ne: loggedInUser._id } }
-    ]
+    // STEP 1: Always exclude users with existing connections
+    const connectionRequests = await Connection.find({
+      $or: [
+        { fromuserId: currentUserId },
+        { toconnectionId: currentUserId }
+      ]
+    }).select('fromuserId toconnectionId');
+
+    const excludeUserIds = new Set();
+    connectionRequests.forEach(req => {
+      excludeUserIds.add(req.fromuserId.toString());
+      excludeUserIds.add(req.toconnectionId.toString());
+    });
+
+    // STEP 2: Build base query (always exclude connected users + self)
+    let filterQuery = {
+      _id: { 
+        $nin: Array.from(excludeUserIds),
+        $ne: currentUserId 
+      }
+    };
+
+    // STEP 3: Apply advanced filters only if requested
+    if (useAdvancedFilters === 'true') {
+      
+      // GitHub Activity Filter
+      if (activeWindow === "7d") {
+        filterQuery.isGithubActive7d = true;
+      } else if (activeWindow === "3m") {
+        filterQuery.isGithubActive3m = true;
+      }
+
+      // Experience Level Filter
+      if (experienceLevel) {
+        const expLevels = Array.isArray(experienceLevel) 
+          ? experienceLevel 
+          : experienceLevel.split(',');
+        filterQuery.experienceLevel = { $in: expLevels };
+      }
+
+      // Skills Filter
+      if (skills) {
+        const skillArray = Array.isArray(skills) 
+          ? skills 
+          : skills.split(',');
+        filterQuery.skills = {
+          $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
+        };
+      }
+
+      // Primary Goal Filter
+      if (primaryGoal) {
+        const goals = Array.isArray(primaryGoal) 
+          ? primaryGoal 
+          : primaryGoal.split(',');
+        filterQuery.primaryGoal = { $in: goals };
+      }
+
+      // Hours per Week Filter
+      if (hoursPerWeek) {
+        filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+      }
+    }
+
+    // STEP 4: Determine which fields to return
+    const feedFields = [
+      'firstName', 
+      'lastName', 
+      'photoUrl', 
+      'skills', 
+      'description', 
+      'gender',
+      'experienceLevel',
+      'primaryGoal',
+      'commitment',
+      'location',
+      'isGithubActive7d',
+      'isGithubActive3m'
+    ];
+
+    let users = [];
+    let totalCount = 0;
+
+    // STEP 5: Execute query (with or without location-based search)
+    const parsedLimit = Math.min(parseInt(limit), 50); // Max 50 users per request
+    const skip = (parseInt(page) - 1) * parsedLimit;
+
+    if (useAdvancedFilters === 'true' && 
+        currentUser.location?.coordinates?.length && 
+        parseInt(locationRadius) > 0) {
+      
+      // Use geospatial query for location-based search
+      const geoQuery = [
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: currentUser.location.coordinates },
+            distanceField: "distance",
+            maxDistance: parseInt(locationRadius) * 1000, // Convert km to meters
+            spherical: true,
+            query: filterQuery,
+            key: "location.coordinates"
+          }
+        },
+        { $skip: skip },
+        { $limit: parsedLimit },
+        { $project: feedFields.reduce((acc, field) => ({ ...acc, [field]: 1, distance: 1 }), {}) }
+      ];
+
+      users = await User.aggregate(geoQuery);
+      
+      // Get total count for pagination (without skip/limit)
+      const countQuery = [
+        {
+          $geoNear: {
+            near: { type: "Point", coordinates: currentUser.location.coordinates },
+            distanceField: "distance",
+            maxDistance: parseInt(locationRadius) * 1000,
+            spherical: true,
+            query: filterQuery,
+            key: "location.coordinates"
+          }
+        },
+        { $count: "total" }
+      ];
+      
+      const countResult = await User.aggregate(countQuery);
+      totalCount = countResult[0]?.total || 0;
+
+    } else {
+      // Use regular query
+      users = await User.find(filterQuery)
+        .select(feedFields.join(' '))
+        .skip(skip)
+        .limit(parsedLimit)
+        .lean(); // Use lean() for better performance
+
+      totalCount = await User.countDocuments(filterQuery);
+    }
+
+    // STEP 6: Handle empty results
+    if (users.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: useAdvancedFilters === 'true' 
+          ? "No users found matching your filters" 
+          : "No more users available",
+        users: [],
+        pagination: {
+          current: parseInt(page),
+          limit: parsedLimit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / parsedLimit),
+          hasNext: false,
+          hasPrev: parseInt(page) > 1
+        },
+        appliedFilters: useAdvancedFilters === 'true' ? {
+          skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
+          experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
+          locationRadius: parseInt(locationRadius) || null,
+          primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
+          hoursPerWeek,
+          activeWindow
+        } : null
+      });
+    }
+
+    // STEP 7: Return successful response
+    const totalPages = Math.ceil(totalCount / parsedLimit);
     
-    }).select(feedshow).skip((page-1)*limit).limit(limit);  
-    
-    return res.status(200).json({
-      message: 'connected users',
-      data: users
-    })    
-  
+    res.status(200).json({
+      success: true,
+      message: `Found ${users.length} users`,
+      users,
+      pagination: {
+        current: parseInt(page),
+        limit: parsedLimit,
+        total: totalCount,
+        totalPages,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      },
+      appliedFilters: useAdvancedFilters === 'true' ? {
+        skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
+        experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
+        locationRadius: parseInt(locationRadius) || null,
+        primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
+        hoursPerWeek,
+        activeWindow
+      } : null
+    });
 
-} catch (error) {
-  return res.status(400).json({ error: error.message });
-}
+  } catch (error) {
+    console.error("Error in getFeed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
+    });
+  }
 }
 
 const mutualConnection = async (req, res) => {
