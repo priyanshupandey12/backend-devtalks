@@ -89,7 +89,14 @@ githubActivity: {
 },
 isGithubActive7d: { type: Boolean, default: false },
 isGithubActive3m: { type: Boolean, default: false },
-
+socketid:{
+  type:String,
+  default:null
+},
+isOnline:{
+  type:Boolean,
+  default:false
+}
 
 },{timestamps:true});
 

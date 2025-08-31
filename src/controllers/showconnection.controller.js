@@ -35,8 +35,8 @@ const acceptingConnection = async (req, res) => {
         { fromuserId: loggedInUser._id, status: 'accepted' },
         { toconnectionId: loggedInUser._id, status: 'accepted' }
       ] 
-    }).populate('fromuserId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender'])
-      .populate('toconnectionId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender']);
+    }).populate('fromuserId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender','isOnline'])
+      .populate('toconnectionId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender','isOnline']);
 
     const data = connectionRequest.reduce((acc, item) => {
       let connection;

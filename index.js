@@ -42,7 +42,7 @@ intiliazeSocket(server)
 
 
 connectDB().then(()=>{
-  console.log('database connected')
+ 
 
    startGithubActivityCron();
   server.listen(7777,()=>{

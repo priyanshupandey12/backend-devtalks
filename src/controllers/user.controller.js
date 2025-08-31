@@ -3,6 +3,7 @@ const {validatesignUpData}=require('../utils/validate');
 const bcrypt=require('bcrypt')
 const jwt=require('jsonwebtoken');
 const geocodeAddress=require('../utils/geocode');
+const {RtcTokenBuilder,RtcRole}=require('agora-token')
 
 const signUp=async(req,res)=>{
 
@@ -144,115 +145,37 @@ const changePassword=async(req,res)=>{
 }
 
 
+const generateAgoraToken=async(req,res)=>{
+  
+    try {
+       const { channelName } = req.body;
+         const uid = 0; 
+    
+           if (!channelName) {
+      return res.status(400).json({ error: 'Channel name is required' });
+    }
+     
+     const APP_ID = process.env.AGORA_APP_ID;
+    const APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE;
+      const role = RtcRole.PUBLISHER;
+    const expirationTimeInSeconds = 3600; 
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+        const token = RtcTokenBuilder.buildTokenWithUid(
+      APP_ID,
+      APP_CERTIFICATE,
+      channelName,
+      uid,
+      role,
+      privilegeExpiredTs
+    );
 
-// const getAllusers = async (req, res) => {
-//   try {
-//     const currentUserId = req.user._id;
-
-//     const {
-//       skills,
-//       experienceLevel,
-//       activeWindow,
-//       locationRadius,
-//       primaryGoal,
-//       hoursPerWeek,
-//       page = 1,
-//       limit = 10
-//     } = req.query;
-
-//     const currentUser = await User.findById(currentUserId);
-
-//     if (!currentUser) {
-//       throw new Error("Current user not found");
-//     }
-
-//     let filterQuery = {
-//       _id: { $ne: currentUserId }
-//     };
-
-//     // Apply filters
-//     if (activeWindow === "7d") {
-//       filterQuery.isGithubActive7d = true;
-//     } else if (activeWindow === "3m") {
-//       filterQuery.isGithubActive3m = true;
-//     }
-
-//     if (experienceLevel) {
-//       const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
-//       filterQuery.experienceLevel = { $in: expLevels };
-//     }
-
-//     if (skills) {
-//       const skillArray = Array.isArray(skills) ? skills : skills.split(',');
-//       filterQuery.skills = {
-//         $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
-//       };
-//     }
-
-//     if (primaryGoal) {
-//       const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
-//       filterQuery.primaryGoal = { $in: goals };
-//     }
-
-//     if (hoursPerWeek) {
-//       filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
-//     }
-
-//     let users = [];
-
-   
-//     if (currentUser.location?.coordinates?.length && parseInt(locationRadius) > 0) {
-//       users = await User.aggregate([
-//         {
-//           $geoNear: {
-//             near: { type: "Point", coordinates: currentUser.location.coordinates },
-//             distanceField: "distance",
-//             maxDistance: parseInt(locationRadius) * 1000,
-//             spherical: true,
-//             query: filterQuery,
-//             key: "location.coordinates"
-//           }
-//         },
-//         { $skip: (parseInt(page) - 1) * parseInt(limit) },
-//         { $limit: parseInt(limit) }
-//       ]);
-//     } else {
-      
-//       users = await User.find(filterQuery)
-//         .skip((parseInt(page) - 1) * parseInt(limit))
-//         .limit(parseInt(limit));
-//     }
-
-//     if (users.length === 0) {
-//       return res.status(200).json("User not found");
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       users,
-//       pagination: {
-//         current: parseInt(page),
-//         limit: parseInt(limit),
-//         total: users.length
-//       },
-//       appliedFilters: {
-//         skills,
-//         experienceLevel,
-//         locationRadius: parseInt(locationRadius),
-//         primaryGoal,
-//         hoursPerWeek,
-//         activeWindow
-//       }
-//     });
-//   } catch (error) {
-//     console.error("Error in getAllUsers:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: process.env.NODE_ENV === "development" ? error.message : undefined
-//     });
-//   }
-// };
+     return res.status(200).json({ token });
+    } catch (error) {
+       console.error("Error generating Agora token:", error);
+    return res.status(500).json({ error: 'Failed to generate token' });
+    }
+}
 
 
-module.exports={signUp,loginUp,logOut,changePassword}
+module.exports={signUp,loginUp,logOut,changePassword,generateAgoraToken}
