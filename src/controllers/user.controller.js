@@ -5,10 +5,29 @@ const jwt=require('jsonwebtoken');
 const geocodeAddress=require('../utils/geocode');
 const {RtcTokenBuilder,RtcRole}=require('agora-token')
 
+
+const generateAccessAndRefereshTokens = async(userId) =>{
+    try {
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
+
+        return {accessToken, refreshToken}
+
+
+    } catch (error) {
+         throw new Error("Token generation failed: " + error.message);
+    }
+}
+
+
 const signUp=async(req,res)=>{
 
  try {
-   //validation of user
+  
 
   validatesignUpData(req);
 
@@ -57,12 +76,12 @@ const signUp=async(req,res)=>{
       description: description || "",
       photoUrl: photoUrl || "",
      skills: skills || [],
-      experienceLevel: experienceLevel || "Beginner",
+      experienceLevel: experienceLevel,
       location: geoLocation,
-      timezone: timezone || "",
-      commitment: commitment || { hoursPerWeek: "5-10 hours", projectDuration: "1-3 months" },
-      primaryGoal: primaryGoal || "Portfolio Project",
-      userRole: userRole || "Looking to Join",
+      timezone: timezone ,
+      commitment: commitment,
+      primaryGoal: primaryGoal ,
+      userRole: userRole ,
          links: {
         githubUsername: links?.githubUsername || "",
         linkedin: links?.linkedin || "",
@@ -71,8 +90,6 @@ const signUp=async(req,res)=>{
    });
 
  const savedUser=  await newUser.save();
- const token=await savedUser.getJWTToken();
-res.cookie('token',token,{expires:new Date(Date.now()+8 * 6400000)});
   const userWithoutPassword = savedUser.toObject();
     delete userWithoutPassword.password;
 
@@ -102,10 +119,20 @@ const loginUp=async(req,res)=>{
     if(!isPasswordValid) {
       throw new Error('user password is not valid');
     }
-   const token=await user.getJWTToken();
-   res.cookie('token',token,{expires:new Date(Date.now()+8 * 6400000)});
 
-    return res.status(200).json({user}); 
+   const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+     const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+     return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json({ user: loggedInUser}); 
   } catch (error) {
     return res.status(400).json("ERROR : "+error.message);
   }
@@ -114,10 +141,78 @@ const loginUp=async(req,res)=>{
 };
 
 const logOut=async(req,res)=>{
-res.cookie('token',null,{expires:new Date(Date.now())});
-return res.status(200).json('logout Succesfully');
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1 
+            }
+        },
+        {
+            new: true
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json('logout Succesfully')
+
 }
 
+
+const refreshAccessToken = async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    return res.status(401).json({ error: "Unauthorized request" });
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid refresh token" });
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+        user.refreshToken = undefined;
+         return res.status(403).json({ error: "Forbidden. Token reuse detected." });
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+   
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefereshTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json({
+        message: "Access token refreshed",
+        accessToken,
+        refreshToken: newRefreshToken
+      });
+  } catch (error) {
+    return res.status(401).json({ error: error.message });
+  }
+};
 const changePassword=async(req,res)=>{
   try {
    const {oldPassword,newPassword}=req.body;
@@ -178,4 +273,4 @@ const generateAgoraToken=async(req,res)=>{
 }
 
 
-module.exports={signUp,loginUp,logOut,changePassword,generateAgoraToken}
+module.exports={signUp,loginUp,logOut,changePassword,generateAgoraToken,refreshAccessToken}

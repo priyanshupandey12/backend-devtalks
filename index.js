@@ -5,6 +5,9 @@ const connectDB=require('./config/database');
 const app=express();
 const cors=require('cors');
 const http=require('http');
+const mongoSanitize = require('express-mongo-sanitize');
+const helmet = require("helmet");
+const morgan = require('morgan');
 const { startGithubActivityCron }=require('./src/utils/githubcron')
 app.use(cors
   ({
@@ -13,6 +16,9 @@ app.use(cors
   }
 ));
 app.use(express.json());
+app.use(mongoSanitize());
+app.use(helmet());
+app.use(morgan('dev'));
 app.use(cookieParser());
 
 const userRouter=require('./src/router/user.route');

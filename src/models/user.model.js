@@ -96,7 +96,10 @@ socketid:{
 isOnline:{
   type:Boolean,
   default:false
-}
+},
+refreshToken: {
+  type: String
+  }
 
 },{timestamps:true});
 
@@ -104,14 +107,19 @@ isOnline:{
 userSchema.index({ "location.coordinates": "2dsphere" });
 
 
-userSchema.methods.getJWTToken=async function(){
-  const user=this;
-  const token=await jwt.sign(
-    {_id:user._id},
-    process.env.JWT_SECRET_KEY,
-    {expiresIn:'1d'}); 
-
-    return token;
+userSchema.methods.generateAccessToken= function () {
+       return jwt.sign(
+        {_id:this._id},
+         process.env.ACCESS_TOKEN_SECRET,
+         {expiresIn:process.env.ACCESS_TOKEN_EXPIRY}
+      )
+}
+userSchema.methods.generateRefreshToken= function () {
+      return jwt.sign(
+        {_id:this._id},
+         process.env.REFRESH_TOKEN_SECRET,
+         {expiresIn:process.env.REFRESH_TOKEN_EXPIRY}
+      )
 }
 userSchema.methods.verifyPassword=async function(passwordbyuser){
 

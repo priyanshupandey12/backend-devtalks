@@ -4,19 +4,32 @@ const User=require('../models/user.model');
 const userAuth=async(req,res,next)=>{
 
   try {
-    //read the token from cookies
-    const  token=req.cookies.token;
+   
+    const  token=req.cookies.accessToken ||req.header("Authorization")?.replace("Bearer ", "");
 
-    const decodedObj=await jwt.verify(token,process.env.JWT_SECRET_KEY);
+     if (!token) {
+            return res.status(401).json({
+        success: false,
+        message: "Unauthorized request - Token missing",
+      });
+        }
+
+    const decodedObj=await jwt.verify(token,process.env.ACCESS_TOKEN_SECRET);
      const _id=decodedObj._id;
-     const user=await User.findById(_id);
+     const user=await User.findById(_id).select("-password -refreshToken");
      if(!user){
-      throw new Error('user not found');
+    return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
      }
      req.user=user;
     next();
   } catch (error) {
-    res.status(400).json("ERROR : "+error.message);
+    res.status(error.statusCode || 400).json({
+      success: false,
+      message: error.message,
+    });
   }
 
 }

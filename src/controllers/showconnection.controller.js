@@ -71,230 +71,380 @@ const acceptingConnection = async (req, res) => {
   } 
 }
 
-const choosingCardConnection = async (req, res) => {
- try {
-    const currentUserId = req.user._id;
+// const choosingCardConnection = async (req, res) => {
+//  try {
+//     const currentUserId = req.user._id;
 
-    // Extract query parameters
-    const {
-      skills,
-      experienceLevel,
-      activeWindow,
-      locationRadius,
-      primaryGoal,
-      hoursPerWeek,
-      page = 1,
-      limit = 10,
-      useAdvancedFilters = false // New parameter to determine filter mode
-    } = req.query;
+//     // Extract query parameters
+//     const {
+//       skills,
+//       experienceLevel,
+//       activeWindow,
+//       locationRadius,
+//       primaryGoal,
+//       hoursPerWeek,
+//       page = 1,
+//       limit = 10,
+//       useAdvancedFilters = false 
+//     } = req.query;
 
-    const currentUser = await User.findById(currentUserId);
-    if (!currentUser) {
-      return res.status(404).json({
-        success: false,
-        message: "Current user not found"
-      });
-    }
+//     const useAdvancedFiltersFlag = useAdvancedFilters === 'true';
+//     const currentUser = await User.findById(currentUserId);
+//     if (!currentUser) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Current user not found"
+//       });
+//     }
 
-    // STEP 1: Always exclude users with existing connections
-    const connectionRequests = await Connection.find({
-      $or: [
-        { fromuserId: currentUserId },
-        { toconnectionId: currentUserId }
-      ]
-    }).select('fromuserId toconnectionId');
+//     // STEP 1: Always exclude users with existing connections
+//     const connectionRequests = await Connection.find({
+//       $or: [
+//         { fromuserId: currentUserId },
+//         { toconnectionId: currentUserId }
+//       ]
+//     }).select('fromuserId toconnectionId');
 
-    const excludeUserIds = new Set();
-    connectionRequests.forEach(req => {
-      excludeUserIds.add(req.fromuserId.toString());
-      excludeUserIds.add(req.toconnectionId.toString());
-    });
+//     const excludeUserIds = new Set();
+//     connectionRequests.forEach(req => {
+//       excludeUserIds.add(req.fromuserId.toString());
+//       excludeUserIds.add(req.toconnectionId.toString());
+//     });
 
-    // STEP 2: Build base query (always exclude connected users + self)
-    let filterQuery = {
-      _id: { 
-        $nin: Array.from(excludeUserIds),
-        $ne: currentUserId 
-      }
-    };
+//     // STEP 2: Build base query (always exclude connected users + self)
+//     let filterQuery = {
+//       _id: { 
+//         $nin: Array.from(excludeUserIds),
+//         $ne: currentUserId 
+//       }
+//     };
 
-    // STEP 3: Apply advanced filters only if requested
-    if (useAdvancedFilters === 'true') {
+//     // STEP 3: Apply advanced filters only if requested
+//     if (useAdvancedFiltersFlag) {
       
-      // GitHub Activity Filter
-      if (activeWindow === "7d") {
-        filterQuery.isGithubActive7d = true;
-      } else if (activeWindow === "3m") {
-        filterQuery.isGithubActive3m = true;
-      }
+//       // GitHub Activity Filter
+//       if (activeWindow === "7d") {
+//         filterQuery.isGithubActive7d = true;
+//       } else if (activeWindow === "3m") {
+//         filterQuery.isGithubActive3m = true;
+//       }
 
-      // Experience Level Filter
-      if (experienceLevel) {
-        const expLevels = Array.isArray(experienceLevel) 
-          ? experienceLevel 
-          : experienceLevel.split(',');
-        filterQuery.experienceLevel = { $in: expLevels };
-      }
+//       // Experience Level Filter
+//       if (experienceLevel) {
+//         const expLevels = Array.isArray(experienceLevel) 
+//           ? experienceLevel 
+//           : experienceLevel.split(',');
+//         filterQuery.experienceLevel = { $in: expLevels };
+//       }
 
-      // Skills Filter
-      if (skills) {
-        const skillArray = Array.isArray(skills) 
-          ? skills 
-          : skills.split(',');
-        filterQuery.skills = {
-          $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
-        };
-      }
+//       // Skills Filter
+//       if (skills) {
+//         const skillArray = Array.isArray(skills) 
+//           ? skills 
+//           : skills.split(',');
+//         filterQuery.skills = {
+//           $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
+//         };
+//       }
 
-      // Primary Goal Filter
-      if (primaryGoal) {
-        const goals = Array.isArray(primaryGoal) 
-          ? primaryGoal 
-          : primaryGoal.split(',');
-        filterQuery.primaryGoal = { $in: goals };
-      }
+//       // Primary Goal Filter
+//       if (primaryGoal) {
+//         const goals = Array.isArray(primaryGoal) 
+//           ? primaryGoal 
+//           : primaryGoal.split(',');
+//         filterQuery.primaryGoal = { $in: goals };
+//       }
 
-      // Hours per Week Filter
-      if (hoursPerWeek) {
-        filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
-      }
-    }
+//       // Hours per Week Filter
+//       if (hoursPerWeek) {
+//         filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+//       }
+//     }
 
-    // STEP 4: Determine which fields to return
-    const feedFields = [
-      'firstName', 
-      'lastName', 
-      'photoUrl', 
-      'skills', 
-      'description', 
-      'gender',
-      'experienceLevel',
-      'primaryGoal',
-      'commitment',
-      'location',
-      'isGithubActive7d',
-      'isGithubActive3m'
-    ];
+//     // STEP 4: Determine which fields to return
+//     const feedFields = [
+//       'firstName', 
+//       'lastName', 
+//       'photoUrl', 
+//       'skills', 
+//       'description', 
+//       'gender',
+//       'experienceLevel',
+//       'primaryGoal',
+//       'commitment',
+//       'location',
+//       'isGithubActive7d',
+//       'isGithubActive3m'
+//     ];
 
-    let users = [];
-    let totalCount = 0;
+//     let users = [];
+//     let totalCount = 0;
 
-    // STEP 5: Execute query (with or without location-based search)
-    const parsedLimit = Math.min(parseInt(limit), 50); // Max 50 users per request
-    const skip = (parseInt(page) - 1) * parsedLimit;
+//     // STEP 5: Execute query (with or without location-based search)
+//     const parsedLimit = Math.min(parseInt(limit), 50); // Max 50 users per request
+//     const skip = (parseInt(page) - 1) * parsedLimit;
 
-    if (useAdvancedFilters === 'true' && 
-        currentUser.location?.coordinates?.length && 
-        parseInt(locationRadius) > 0) {
+//     if ( useAdvancedFiltersFlag &&
+//         currentUser.location?.coordinates?.length && 
+//         parseInt(locationRadius) > 0) {
       
-      // Use geospatial query for location-based search
-      const geoQuery = [
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: currentUser.location.coordinates },
-            distanceField: "distance",
-            maxDistance: parseInt(locationRadius) * 1000, // Convert km to meters
-            spherical: true,
-            query: filterQuery,
-            key: "location.coordinates"
-          }
-        },
-        { $skip: skip },
-        { $limit: parsedLimit },
-        { $project: feedFields.reduce((acc, field) => ({ ...acc, [field]: 1, distance: 1 }), {}) }
-      ];
+//       // Use geospatial query for location-based search
+//       const geoQuery = [
+//         {
+//           $geoNear: {
+//             near: { type: "Point", coordinates: currentUser.location.coordinates },
+//             distanceField: "distance",
+//             maxDistance: parseInt(locationRadius) * 1000, // Convert km to meters
+//             spherical: true,
+//             query: filterQuery,
+//             key: "location.coordinates"
+//           }
+//         },
+//         { $skip: skip },
+//         { $limit: parsedLimit },
+//         { $project: feedFields.reduce((acc, field) => ({ ...acc, [field]: 1, distance: 1 }), {}) }
+//       ];
 
-      users = await User.aggregate(geoQuery);
+//       users = await User.aggregate(geoQuery);
       
-      // Get total count for pagination (without skip/limit)
-      const countQuery = [
-        {
-          $geoNear: {
-            near: { type: "Point", coordinates: currentUser.location.coordinates },
-            distanceField: "distance",
-            maxDistance: parseInt(locationRadius) * 1000,
-            spherical: true,
-            query: filterQuery,
-            key: "location.coordinates"
-          }
-        },
-        { $count: "total" }
-      ];
+//       // Get total count for pagination (without skip/limit)
+//       const countQuery = [
+//         {
+//           $geoNear: {
+//             near: { type: "Point", coordinates: currentUser.location.coordinates },
+//             distanceField: "distance",
+//             maxDistance: parseInt(locationRadius) * 1000,
+//             spherical: true,
+//             query: filterQuery,
+//             key: "location.coordinates"
+//           }
+//         },
+//         { $count: "total" }
+//       ];
       
-      const countResult = await User.aggregate(countQuery);
-      totalCount = countResult[0]?.total || 0;
+//       const countResult = await User.aggregate(countQuery);
+//       totalCount = countResult[0]?.total || 0;
 
-    } else {
-      // Use regular query
-      users = await User.find(filterQuery)
-        .select(feedFields.join(' '))
-        .skip(skip)
-        .limit(parsedLimit)
-        .lean(); // Use lean() for better performance
+//     } else {
+//       // Use regular query
+//       users = await User.find(filterQuery)
+//         .select(feedFields.join(' '))
+//         .skip(skip)
+//         .limit(parsedLimit)
+//         .lean(); // Use lean() for better performance
 
-      totalCount = await User.countDocuments(filterQuery);
-    }
+//       totalCount = await User.countDocuments(filterQuery);
+//     }
 
-    // STEP 6: Handle empty results
-    if (users.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: useAdvancedFilters === 'true' 
-          ? "No users found matching your filters" 
-          : "No more users available",
-        users: [],
-        pagination: {
-          current: parseInt(page),
-          limit: parsedLimit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / parsedLimit),
-          hasNext: false,
-          hasPrev: parseInt(page) > 1
-        },
-        appliedFilters: useAdvancedFilters === 'true' ? {
-          skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
-          experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
-          locationRadius: parseInt(locationRadius) || null,
-          primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
-          hoursPerWeek,
-          activeWindow
-        } : null
-      });
-    }
+//     // STEP 6: Handle empty results
+//     if (users.length === 0) {
+//       return res.status(200).json({
+//         success: true,
+//         message: useAdvancedFilters === 'true' 
+//           ? "No users found matching your filters" 
+//           : "No more users available",
+//         users: [],
+//         pagination: {
+//           current: parseInt(page),
+//           limit: parsedLimit,
+//           total: totalCount,
+//           totalPages: Math.ceil(totalCount / parsedLimit),
+//           hasNext: false,
+//           hasPrev: parseInt(page) > 1
+//         },
+//         appliedFilters: useAdvancedFilters === 'true' ? {
+//           skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
+//           experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
+//           locationRadius: parseInt(locationRadius) || null,
+//           primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
+//           hoursPerWeek,
+//           activeWindow
+//         } : null
+//       });
+//     }
 
-    // STEP 7: Return successful response
-    const totalPages = Math.ceil(totalCount / parsedLimit);
+//     // STEP 7: Return successful response
+//     const totalPages = Math.ceil(totalCount / parsedLimit);
     
-    res.status(200).json({
-      success: true,
-      message: `Found ${users.length} users`,
-      users,
-      pagination: {
-        current: parseInt(page),
-        limit: parsedLimit,
-        total: totalCount,
-        totalPages,
-        hasNext: parseInt(page) < totalPages,
-        hasPrev: parseInt(page) > 1
-      },
-      appliedFilters: useAdvancedFilters === 'true' ? {
-        skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
-        experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
-        locationRadius: parseInt(locationRadius) || null,
-        primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
-        hoursPerWeek,
-        activeWindow
-      } : null
-    });
+//     res.status(200).json({
+//       success: true,
+//       message: `Found ${users.length} users`,
+//       users,
+//       pagination: {
+//         current: parseInt(page),
+//         limit: parsedLimit,
+//         total: totalCount,
+//         totalPages,
+//         hasNext: parseInt(page) < totalPages,
+//         hasPrev: parseInt(page) > 1
+//       },
+//       appliedFilters: useAdvancedFilters === 'true' ? {
+//         skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
+//         experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
+//         locationRadius: parseInt(locationRadius) || null,
+//         primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
+//         hoursPerWeek,
+//         activeWindow
+//       } : null
+//     });
 
-  } catch (error) {
-    console.error("Error in getFeed:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
-    });
-  }
+//   } catch (error) {
+//     console.error("Error in getFeed:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
+//     });
+//   }
+// }
+
+const choosingCardConnection = async (req, res) => {
+    try {
+        const currentUserId = req.user._id;
+
+     
+        const {
+            skills,
+            experienceLevel,
+            activeWindow,
+            primaryGoal,
+            hoursPerWeek,
+        } = req.query;
+
+        const useAdvancedFilters = req.query.useAdvancedFilters === 'true';
+        const pageNum = parseInt(req.query.page) || 1;
+        const limitNum = Math.min(parseInt(req.query.limit) || 10, 50); 
+        const radiusKm = parseInt(req.query.locationRadius) || 0;
+        const skip = (pageNum - 1) * limitNum;
+
+        const currentUser = await User.findById(currentUserId).lean(); 
+        if (!currentUser) {
+            return res.status(404).json({ success: false, message: "Current user not found" });
+        }
+
+      
+        const connectionRequests = await Connection.find({
+            $or: [{ fromuserId: currentUserId }, { toconnectionId: currentUserId }]
+        }).select('fromuserId toconnectionId').lean();
+
+        const excludeUserIds = new Set(
+            connectionRequests.flatMap(req => [req.fromuserId.toString(), req.toconnectionId.toString()])
+        );
+
+        
+        let filterQuery = {
+            _id: { $nin: Array.from(excludeUserIds) } 
+        };
+
+      
+        if (useAdvancedFilters) {
+            if (activeWindow === "7d") filterQuery.isGithubActive7d = true;
+            if (activeWindow === "3m") filterQuery.isGithubActive3m = true;
+            if (hoursPerWeek) filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+
+            if (experienceLevel) {
+                const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
+                filterQuery.experienceLevel = { $in: expLevels };
+            }
+
+            if (skills) {
+                const skillArray = Array.isArray(skills) ? skills : skills.split(',');
+                filterQuery.skills = { $in: skillArray.map(skill => new RegExp(skill.trim(), 'i')) };
+            }
+
+            if (primaryGoal) {
+                const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
+                filterQuery.primaryGoal = { $in: goals };
+            }
+        }
+        
+     
+        const feedFields = {
+             _id: 1, firstName: 1, lastName: 1, photoUrl: 1, skills: 1,
+             description: 1, gender: 1, experienceLevel: 1, primaryGoal: 1,
+             commitment: 1, location: 1, isGithubActive7d: 1, isGithubActive3m: 1,
+             distance: 1 
+        };
+
+        let users = [];
+        let totalCount = 0;
+
+        // STEP 6: Execute the query
+        const hasLocationFilter = useAdvancedFilters && currentUser.location?.coordinates?.length && radiusKm > 0;
+
+        if (hasLocationFilter) {
+           
+            const geoAggregation = [
+                {
+                    $geoNear: {
+                        near: { type: "Point", coordinates: currentUser.location.coordinates },
+                        distanceField: "distance",
+                        maxDistance: radiusKm * 1000, 
+                        query: filterQuery,
+                        spherical: true
+                    }
+                },
+                {
+                    $facet: {
+                        data: [
+                            { $skip: skip },
+                            { $limit: limitNum },
+                            { $project: feedFields }
+                        ],
+                        metadata: [{ $count: "total" }]
+                    }
+                }
+            ];
+            const result = await User.aggregate(geoAggregation);
+            users = result[0].data;
+            totalCount = result[0].metadata[0]?.total || 0;
+
+        } else {
+          
+            users = await User.find(filterQuery)
+                .select(Object.keys(feedFields).join(' '))
+                .skip(skip)
+                .limit(limitNum)
+                .lean();
+            totalCount = await User.countDocuments(filterQuery);
+        }
+
+     
+        const totalPages = Math.ceil(totalCount / limitNum);
+        const pagination = {
+            current: pageNum,
+            limit: limitNum,
+            total: totalCount,
+            totalPages,
+            hasNext: pageNum < totalPages,
+            hasPrev: pageNum > 1
+        };
+
+        const appliedFilters = useAdvancedFilters ? {
+             skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
+             experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
+             locationRadius: radiusKm || null,
+             primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
+             hoursPerWeek,
+             activeWindow
+        } : null;
+
+        res.status(200).json({
+            success: true,
+            message: totalCount > 0 ? `Found ${totalCount} matching users` : "No users found matching your criteria",
+            users,
+            pagination,
+            appliedFilters
+        });
+
+    } catch (error) {
+        console.error("Error in choosingCardConnection:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: process.env.NODE_ENV === "development" ? error.message : "An error occurred"
+        });
+    }
 }
 
 const mutualConnection = async (req, res) => {
