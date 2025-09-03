@@ -21,23 +21,31 @@ const profileSchema = z.object({
   description: z.string().optional(),
   photoUrl: z.string().url().optional(),
   skills: z.array(z.string()).optional(),
-  location: z.object({
-    type: z.enum(["Point"]),
-    coordinates: z.array(z.number()).length(2),
-    address: z.string().optional()
-  }).optional(),
+  location: z.union([
+    z.string(), 
+    z.object({
+      type: z.enum(["Point"]),
+      coordinates: z.array(z.number()).length(2),
+      address: z.string().optional()
+    })
+  ]).optional(),
   commitment: z.object({
     hoursPerWeek: z.string().optional(),
     projectDuration: z.string().optional()
   }).optional(),
   primaryGoal: z.enum([
-    "Build a Startup",
-    "Portfolio Project",
-    "Learn a New Skill",
-    "Hackathon",
-    "Just for Fun"
+   'Build a Startup', 
+   'Portfolio Project', 
+   'Learn a New Skill', 
+   'Hackathon', 
+   'Just for Fun',
+   'Learning', 
+   'Building Projects',
+    'Hackathon', 
+    'Networking', 
+    'Job Search'
   ]).optional(),
-  userRole: z.enum(["Project Owner", "Looking to Join"]).optional(),
+  userRole: z.enum(['Project Owner', 'Looking to Join','Developer','Designer']).optional(),
   links: z.object({
     githubUsername: z.string().optional(),
     linkedin: z.string().optional(),
@@ -45,7 +53,7 @@ const profileSchema = z.object({
   }).optional()
 });
 
-// Validation functions
+
 const validatesignUpData = (req) => {
   const result = signUpSchema.safeParse(req.body);
   if (!result.success) {

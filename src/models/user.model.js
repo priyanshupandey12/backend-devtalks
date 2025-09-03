@@ -62,19 +62,19 @@ const userSchema=mongoose.Schema({
     default: ''
   },
   commitment: {
-    hoursPerWeek: { type: String, default: '5-10 hours' },
-    projectDuration: { type: String, default: '1-3 months' }
+    hoursPerWeek: { type: String, default: '' },
+    projectDuration: { type: String, default: '' }
   },
 
   primaryGoal: {
     type: String,
-    enum: ['Build a Startup', 'Portfolio Project', 'Learn a New Skill', 'Hackathon', 'Just for Fun'],
-    default: 'Portfolio Project'
+    enum: ['Build a Startup', 'Portfolio Project', 'Learn a New Skill', 'Hackathon', 'Just for Fun','Learning', 'Building Projects', 'Hackathon', 'Networking', 'Job Search'],
+    default: ''
   },
   userRole: {
     type: String,
-    enum: ['Project Owner', 'Looking to Join'],
-    default: 'Looking to Join'
+    enum: ['Project Owner', 'Looking to Join','Developer','Designer'],
+    default: ''
   },
 
   links: {
