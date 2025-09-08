@@ -28,6 +28,7 @@ const pendingrequestRouter=require('./src/router/showconnection.router');
 const projectRouter=require('./src/router/project.router');
 const chatRouter=require('./src/router/chat.router')
 const paymentRouter=require('./src/router/payment.router')
+const problemRouter=require('./src/router/problem.router')
 const intiliazeSocket=require('./src/utils/socket')
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
@@ -36,7 +37,7 @@ app.use('/api/v1/pending',pendingrequestRouter);
 app.use('/api/v1/project',projectRouter);
 app.use('/api/v1/chats',chatRouter)
 app.use('/api/v1/payment',paymentRouter)
-
+app.use('/api/v1/problems', problemRouter)
 
 
 const server=http.createServer(app)
