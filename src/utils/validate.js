@@ -69,4 +69,70 @@ const validateProfileData = (req) => {
   return true;
 };
 
-module.exports = { validatesignUpData, validateProfileData };
+
+const solutionSchema = z.object({
+  approachName: z.enum(["Brute-force", "Better", "Optimal"], {
+    required_error: "Approach name is required.",
+  }),
+  explanation: z.string().trim().min(1, "Explanation is required."),
+  pseudoCode: z.string().trim().min(1, "Pseudo-code is required."),
+  timeComplexity: z.string().trim().min(1, "Time complexity is required."),
+  spaceComplexity: z.string().trim().min(1, "Space complexity is required."),
+});
+
+
+const exampleSchema = z.object({
+  input: z.string().trim().min(1, "Input is required."),
+  output: z.string().trim().min(1, "Output is required."),
+  explanation: z.string().trim().optional(),
+});
+
+
+const hintsSchema = z.object({
+  understanding: z.string().trim().optional(),
+  edgeCases: z.string().trim().optional(),
+  optimization: z.string().trim().optional(),
+});
+
+
+const problemSchema = z.object({
+  body: z.object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Title is required."),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Description is required."),
+    topic: z
+      .string()
+      .trim()
+      .min(1, "Topic is required."),
+    difficulty: z.enum(["Easy", "Medium", "Hard"], {
+      required_error: "Difficulty level is required.",
+    }),
+
+
+    solutions: z
+      .array(solutionSchema)
+      .min(1, "At least one solution is required."),
+
+ 
+    constraints: z.string().trim().optional(),
+    examples: z.array(exampleSchema).optional(),
+    hints: hintsSchema.optional(),
+
+   
+    similarProblemIds: z
+      .array(
+        z
+          .string()
+          .regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId format.")
+      )
+      .optional(),
+  }),
+});
+
+
+module.exports = { validatesignUpData, validateProfileData,problemSchema };

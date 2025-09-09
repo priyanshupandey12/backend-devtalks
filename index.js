@@ -29,6 +29,7 @@ const projectRouter=require('./src/router/project.router');
 const chatRouter=require('./src/router/chat.router')
 const paymentRouter=require('./src/router/payment.router')
 const problemRouter=require('./src/router/problem.router')
+const sessionRouter=require('./src/router/session.router')
 const intiliazeSocket=require('./src/utils/socket')
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
@@ -38,7 +39,7 @@ app.use('/api/v1/project',projectRouter);
 app.use('/api/v1/chats',chatRouter)
 app.use('/api/v1/payment',paymentRouter)
 app.use('/api/v1/problems', problemRouter)
-
+app.use('/api/v1/sessions', sessionRouter)
 
 const server=http.createServer(app)
 intiliazeSocket(server)

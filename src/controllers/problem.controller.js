@@ -1,4 +1,7 @@
 const Problem=require('../models/problem.model');
+const mongoose = require('mongoose');
+const {problemSchema}=require('../utils/validate');
+
 
 
 const getAllProblems=async(req,res)=>{
@@ -56,6 +59,59 @@ const getAllProblems=async(req,res)=>{
      }
 }
 
+const getProblemById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+  
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid problem ID format." });
+    }
 
-module.exports={getAllProblems}
+    const problem = await Problem.findById(id)
+      .populate('similarProblemIds', 'title topic difficulty'); 
+    
+   
+    if (!problem) {
+      return res.status(404).json({ success: false, message: "Problem not found." });
+    }
+
+    return res.status(200).json({ success: true, data: problem });
+
+  } catch (error) {
+    console.error("Error in getProblemById:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const createProblem = async (req, res) => {
+  try {
+   
+    const validatedData = problemSchema.parse({ body: req.body }).body;
+
+ 
+    const existingProblem = await Problem.findOne({ title: validatedData.title });
+    if (existingProblem) {
+      return res.status(400).json({ error: "A problem with this title already exists." });
+    }
+
+   
+    const problem = new Problem(validatedData);
+    await problem.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Problem created successfully",
+      problem,
+    });
+  } catch (error) {
+    if (error.errors) {
+   
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error("Error creating problem:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+module.exports={getAllProblems,getProblemById,createProblem}

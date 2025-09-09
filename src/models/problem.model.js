@@ -15,6 +15,13 @@ const solutionApproachSchema = new mongoose.Schema({
 });
 
 
+const exampleSchema = new mongoose.Schema({
+  input: { type: String, required: true },
+  output: { type: String, required: true },
+  explanation: { type: String }
+});
+
+
 const problemSchema = new mongoose.Schema({
   title: { type: String, required: true, unique: true },
   description: { type: String, required: true },
@@ -23,7 +30,8 @@ const problemSchema = new mongoose.Schema({
   
 
   solutions: [solutionApproachSchema],
-
+  constraints: { type: String }, 
+  examples: [exampleSchema], 
 
   hints: {
     understanding: String,
