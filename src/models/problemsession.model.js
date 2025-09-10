@@ -28,6 +28,12 @@ const practiceSessionSchema = new mongoose.Schema({
     default: 'understanding'
   },
   
+    performance: {
+    attempts: { type: Number, default: 0 },
+    hintsUsed: { type: Number, default: 0 },
+    struggledSteps: [{ type: String }] 
+  },
+
 
   history: [{
     step: String,

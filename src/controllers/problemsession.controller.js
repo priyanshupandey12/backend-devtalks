@@ -1,5 +1,5 @@
 const PracticeSession = require('../models/problemsession.model');
-
+const aiMentor=require('../utils/openai.cjs');
 
 const startSession = async (req, res) => {
   try {
@@ -64,7 +64,10 @@ const submitStep = async (req, res) => {
     }
 
  
-    const session = await PracticeSession.findOne({ _id: sessionId, userId });
+    const session = await PracticeSession.findOne({ _id: sessionId, userId }).populate({
+        path: 'problemId',
+        select: 'title description topic difficulty constraints examples hints solutions'
+      });
 
     if (!session) {
       return res.status(404).json({
@@ -74,27 +77,37 @@ const submitStep = async (req, res) => {
     }
 
     const currentStep = session.currentStep;
-    const nextStep = getNextStep(currentStep);
+   
 
-    // --- AI Logic will go here in the future ---
-    const feedback =
-      nextStep === "completed"
-        ? "Well done! You’ve finished the session. 🎉"
-        : "Great! Let's move to the next step.";
-    // --- End of placeholder logic ---
+   const aiResponse = await aiMentor.getMentorResponse(session, submission);
+    
+   
+    session.performance.attempts += 1;
+    
+    if (aiResponse.needsHelp) {
+      session.performance.hintsUsed += 1;
+    }
+    
+    if (aiResponse.isStruggling && !session.performance.struggledSteps.includes(currentStep)) {
+      session.performance.struggledSteps.push(currentStep);
+    }
 
-  
+    
     session.history.push({
       step: currentStep,
       userSubmission: submission,
-      feedbackGiven: feedback,
+      feedbackGiven: aiResponse.feedback,
     });
 
- 
-    if (nextStep === "completed") {
-      session.status = "completed";
-    } else {
-      session.currentStep = nextStep;
+   
+    let nextStep = currentStep;
+    if (aiResponse.shouldProgress) {
+      nextStep = getNextStep(currentStep);
+      if (nextStep === "completed" || aiResponse.isComplete) {
+        session.status = "completed";
+      } else {
+        session.currentStep = nextStep;
+      }
     }
 
     await session.save();
@@ -102,11 +115,18 @@ const submitStep = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        feedback,
-        nextStep,
+        feedback: aiResponse.feedback,
+        currentStep: session.currentStep,
+        nextStep: nextStep !== currentStep ? nextStep : null,
         sessionId: session._id,
+        performance: session.performance,
+        shouldProgress: aiResponse.shouldProgress,
+        needsHelp: aiResponse.needsHelp
       },
     });
+
+  
+
   } catch (error) {
     console.error("Error in submitStep:", error);
     return res.status(500).json({ success: false, message: "Server error" });
