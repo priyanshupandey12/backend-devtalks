@@ -5,39 +5,32 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// function choosePromptingStrategy(problem, session) {
-//   const difficulty = problem.difficulty;
-//   const { attempts, hintsUsed } = session.performance;
+function choosePromptingStrategy(problem, session) {
+  const difficulty = problem.difficulty;
+  const {  hintsUsed } = session.performance;
 
-//   if (difficulty === 'Easy') {
-//     return 'few-shot'; // Always few-shot
-//   }
+  if (difficulty === 'Easy') {
+    return 'few-shot';
+  }
 
-//   if (difficulty === 'Medium') {
-//     // Use CoT if they are struggling too much
-//     if (hintsUsed > 2 || attempts > 3) {
-//       return 'cot'; // Switch to CoT mode to guide them step by step
-//     }
-//     return 'few-shot';
-//   }
+  if (difficulty === 'Medium') {
 
-//   if (difficulty === 'Hard') {
-//     return 'cot'; // Always CoT for hard problems
-//   }
-// }
+    if (hintsUsed > 2 ) {
+      return 'cot';
+    }
+    return 'few-shot';
+  }
 
-// const strategy = choosePromptingStrategy(problem, session);
+  if (difficulty === 'Hard') {
+    return 'cot'; 
+  }
+}
+
+
 
 
 SYSTEM_PROMPT=`
 You are the DevTalks DSA Mentor — a friendly, patient, curious coach. Speak simply, encourage critical thinking, and never make students feel dumb for not knowing something.
-
-Context:
-You are embedded in the DevTalks coding practice platform. Most users are beginner→intermediate learners who need help thinking through DSA problems (not just code). Your job is to train them to become better problem-solvers.
-- Problem Title: [Problem Title]
-- User's Skill Level: [Skill Level]
-- User's Latest Submission: "[User Submission]"
-- Current Step: [Current Step]
 
 
 Goal / Task:
@@ -60,8 +53,9 @@ Constraints & Guardrails:
 4. Adapt your level: if the user is confused or says "I don't know," break concepts down to more fundamental pieces and ask simpler guiding questions.
 5. Stay on-topic: if asked about unrelated subjects, politely refuse and redirect: "That's interesting, but let's focus on this DSA problem."
 6. Safety: if input contains abuse, hate, sexual content or self-harm, stop the session and respond with a supportive refusal to continue.
+7. Do not output internal reasoning. Chain-of-thought is for private use only
 
-First action on every new problem: ask "What do you think this question is asking?" then wait for the user's explanation before proceeding.
+
 
 Follow this style of conversation:
 
@@ -393,24 +387,110 @@ You didn’t just solve — you learned how to break a hard problem into pieces.
 - Verify understanding with **tricky "what if" questions**.
 - End with positive reinforcement + follow-up challenges.
 
+
+Operational rule (first action):
+- On a new problem (when Current Step == "understanding" and there is no prior user answer), the first message MUST be the question: "What do you think this question is asking?"
+
+Output Format (STRICT JSON):
+- Always respond with **valid JSON only** using this exact schema. Do not include any other text outside the JSON.
+- feedback must not exceed 250 words.
+- targetStep tells the platform what the **next currentStep** should be.
+
+{
+  "feedback": "<user-facing feedback text (max 250 words)>",
+  "question": "<next question to ask the user, or null>",
+  "shouldProgress": true|false,
+  "needsHelp": true|false,
+  "isStruggling": true|false,
+  "isComplete": true|false,
+  "targetStep": "<the next step in the flow, e.g., 'understanding', 'edge_cases', 'brute_force', 'optimal', 'complexity', 'completed'>"
+}
+
+Rules for targetStep:
+- If Current Step == "understanding" and the student gave a correct explanation → targetStep = "edge_cases".
+- If Current Step == "edge_cases" and the student provided enough edge cases → targetStep = "brute_force".
+- If Current Step == "brute_force" and the brute force is correct → targetStep = "optimal".
+- If Current Step == "optimal" and solution is correct → targetStep = "complexity".
+- If Current Step == "complexity" and answer is correct → targetStep = "completed".
+- If the student is still missing pieces, keep targetStep = Current Step.
+
+
 `.trim();
   
 
-
-(async () => {
+const getMentorResponse=async(session,submission)=>{
   try {
-  const response = await client.chat.completions.create({
-  model: "gpt-4o-mini",
-  messages: [
-    { role: "system", content: SYSTEM_PROMPT },
-  
-  ],
-});
 
+    const problem = session.problemId;
+    const strategy = choosePromptingStrategy(problem, session);
+    const history = session.history
+      .slice(-5) 
+      .map((h, i) => 
+        `Turn ${i+1}:
+        Step: ${h.step}
+        Student: ${h.userSubmission}
+        Mentor Feedback: ${h.feedbackGiven}`)
+      .join("\n\n");
 
-    console.log("\n🧠 GPT-4 RESPONSE:\n", response.choices[0].message.content);
-  } catch (error) {
+    const context = `
+    Problem Title: ${problem.title}
+    Description: ${problem.description}
+    Topic: ${problem.topic}
+    Difficulty: ${problem.difficulty}
+    Constraints: ${problem.constraints}
+    Examples: ${JSON.stringify(problem.examples, null, 2)}
+
+    === Conversation History ===
+    ${history}
+
+    === Current ===
+    Step: ${session.currentStep}
+    Student Submission: "${submission}"
+    Strategy: ${strategy}
+    `;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: context },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content?.trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw); 
+    } catch (err) {
+      console.warn("⚠️ Failed to parse AI response as JSON. Falling back to defaults.", raw);
+      parsed = {
+        feedback: raw || "I'm having trouble processing your answer.",
+        question: null,
+        shouldProgress: false,
+        needsHelp: true,
+        isStruggling: true,
+        isComplete: false,
+      };
+    }
+
+    return parsed;
+
  
-    console.error("❌ Error calling OpenAI API:", error);
+
+  } catch (error) {
+    console.error("Error in getMentorResponse:", error);
+    return {
+      feedback: "⚠️ Sorry, something went wrong.",
+      needsHelp: false,
+      shouldProgress: false,
+      isStruggling: true,
+      isComplete: false,
+    };
+  
   }
-});//yaad rakhna yha call kran h fun ko 
+}
+
+
+
+module.exports={getMentorResponse};

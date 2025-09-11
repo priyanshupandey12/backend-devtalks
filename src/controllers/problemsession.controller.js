@@ -1,6 +1,6 @@
 const PracticeSession = require('../models/problemsession.model');
 const aiMentor=require('../utils/openai.cjs');
-
+const mongoose = require('mongoose');
 const startSession = async (req, res) => {
   try {
     const { problemId } = req.body;
@@ -55,13 +55,14 @@ const submitStep = async (req, res) => {
     const { submission } = req.body;
     const userId = req.user?._id;
 
-    if (!submission) {
-      return res.status(400).json({ success: false, message: "Submission is required." });
-    }
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized. User not found." });
     }
+
+      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      return res.status(400).json({ success: false, message: "Invalid session id." });
+      }
 
  
     const session = await PracticeSession.findOne({ _id: sessionId, userId }).populate({
@@ -78,50 +79,76 @@ const submitStep = async (req, res) => {
 
     const currentStep = session.currentStep;
    
-
-   const aiResponse = await aiMentor.getMentorResponse(session, submission);
-    
-   
-    session.performance.attempts += 1;
-    
-    if (aiResponse.needsHelp) {
-      session.performance.hintsUsed += 1;
+    if (!submission && currentStep !== 'understanding') {
+      return res.status(400).json({ success: false, message: "Submission is required for this step." });
     }
-    
-    if (aiResponse.isStruggling && !session.performance.struggledSteps.includes(currentStep)) {
+
+      let aiResponse;
+    try {
+      aiResponse = await aiMentor.getMentorResponse(session, submission || "");
+    } catch (err) {
+      console.error("AI call failed:", err);
+      aiResponse = null;
+    }
+
+
+    const {
+      feedback = "⚠️ The mentor is temporarily unavailable. Please try again.",
+      shouldProgress = false,
+      needsHelp = false,
+      isStruggling = false,
+      isComplete = false
+    } = aiResponse || {};
+
+ 
+    if (!session.performance) {
+      session.performance = { attempts: 0, hintsUsed: 0, struggledSteps: [] };
+    }
+
+    session.performance.attempts = (session.performance.attempts || 0) + 1;
+
+    if (needsHelp) {
+      session.performance.hintsUsed = (session.performance.hintsUsed || 0) + 1;
+    }
+
+    if (isStruggling && !session.performance.struggledSteps.includes(currentStep)) {
       session.performance.struggledSteps.push(currentStep);
     }
-
+    
+   
     
     session.history.push({
       step: currentStep,
-      userSubmission: submission,
-      feedbackGiven: aiResponse.feedback,
+      userSubmission: submission || "",
+      feedbackGiven: feedback,
+      timestamp: new Date()
     });
 
    
-    let nextStep = currentStep;
-    if (aiResponse.shouldProgress) {
-      nextStep = getNextStep(currentStep);
-      if (nextStep === "completed" || aiResponse.isComplete) {
-        session.status = "completed";
-      } else {
-        session.currentStep = nextStep;
-      }
-    }
+        let nextStep = currentStep;
 
-    await session.save();
+if (aiResponse.shouldProgress) {
+  nextStep = aiResponse.targetStep || getNextStep(currentStep);
+  session.currentStep = nextStep;
+
+  if (nextStep === "completed" || aiResponse.isComplete) {
+    session.status = "completed";
+  }
+}
+
+
+     await session.save();
 
     return res.status(200).json({
       success: true,
       data: {
-        feedback: aiResponse.feedback,
+        feedback,
         currentStep: session.currentStep,
         nextStep: nextStep !== currentStep ? nextStep : null,
         sessionId: session._id,
         performance: session.performance,
-        shouldProgress: aiResponse.shouldProgress,
-        needsHelp: aiResponse.needsHelp
+        shouldProgress,
+        needsHelp
       },
     });
 
@@ -135,18 +162,13 @@ const submitStep = async (req, res) => {
 
 
 const getNextStep = (step) => {
-  const steps = [
-    "understanding",
-    "edge_cases",
-    "pseudocode",
-    "complexity",
-    "solution_review",
-  ];
+  const steps = ['understanding','edge_cases','brute_force','optimal','complexity','completed'];
   const currentIndex = steps.indexOf(step);
   return currentIndex >= 0 && currentIndex < steps.length - 1
     ? steps[currentIndex + 1]
-    : "completed";
+    : 'completed';
 };
+
 
 
 const getSessionById = async (req, res) => {

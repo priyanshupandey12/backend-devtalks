@@ -24,7 +24,7 @@ const practiceSessionSchema = new mongoose.Schema({
  
   currentStep: {
     type: String,
-    enum: ['understanding', 'edge_cases', 'pseudocode', 'complexity', 'solution_review'],
+    enum: ['understanding', 'edge_cases','brute_force', 'optimal','complexity', 'completed'],
     default: 'understanding'
   },
   
@@ -42,6 +42,14 @@ const practiceSessionSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now }
   }]
 }, { timestamps: true });
+
+
+practiceSessionSchema.pre('save', function(next) {
+  if(this.currentStep === 'completed') {
+    this.status = 'completed';
+  }
+  next();
+});
 
 const PracticeSession = mongoose.model('PracticeSession', practiceSessionSchema);
 module.exports = PracticeSession;
