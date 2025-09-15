@@ -114,4 +114,28 @@ const createProblem = async (req, res) => {
   }
 };
 
-module.exports={getAllProblems,getProblemById,createProblem}
+
+const getProblemForAIContext = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid problem ID" });
+    }
+
+    const problem = await Problem.findById(id)
+      .select('title description topic difficulty constraints examples');
+    
+    if (!problem) {
+      return res.status(404).json({ success: false, message: "Problem not found" });
+    }
+
+    return res.status(200).json({ success: true, data: problem });
+
+  } catch (error) {
+    console.error("Error in getProblemForAIContext:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+module.exports={getAllProblems,getProblemById,createProblem,getProblemForAIContext}
