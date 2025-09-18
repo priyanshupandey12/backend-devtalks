@@ -13,18 +13,39 @@ router.route('/change-password').post(userAuth,changePassword);
 router.route('/agora/token').post(userAuth,generateAgoraToken);
 
 
-router.get('/auth/google', passport.authenticate('google', {
-    scope: ['profile', 'email'] 
-}));
+router.get(
+  '/auth/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+  })
+);
 
-router.get('/auth/google/callback', passport.authenticate('google', {
-    failureRedirect: 'http://localhost:5173/login', 
-    session: true 
-}), (req, res) => {
 
-    console.log("Redirecting to dashboard...");
-    res.redirect('http://localhost:5173/profile'); 
-});
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.FRONTEND_URL}/login`,
+    session: false, 
+  }),
+  async (req, res) => {
+    try {
+   
+      const accessToken = req.user.generateAccessToken();
+      const refreshToken = req.user.generateRefreshToken();
+
+      
+      req.user.refreshToken = refreshToken;
+      await req.user.save({ validateBeforeSave: false });
+
+   
+      const redirectURL = `${process.env.FRONTEND_URL}/profile?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+      res.redirect(redirectURL);
+    } catch (err) {
+      console.error('Google Auth Error:', err);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+    }
+  }
+);
 
 module.exports=router;
 

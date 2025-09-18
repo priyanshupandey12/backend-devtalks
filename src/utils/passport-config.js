@@ -57,18 +57,6 @@ async(accessToken, refreshToken, profile, done) => {
 }));
 
 
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-});
 
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id).select('-password');
-    done(null, user);
-  } catch (error) {
-    console.error('Passport deserializeUser error:', error);
-    done(error, null);
-  }
-});
 
 module.exports = passport;

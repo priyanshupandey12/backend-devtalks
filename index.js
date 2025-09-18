@@ -9,7 +9,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require("helmet");
 const morgan = require('morgan');
 const { startGithubActivityCron }=require('./src/utils/githubcron')
-const session = require('express-session');
+
 const passport = require('./src/utils/passport-config');
 app.use(cors
   ({
@@ -17,18 +17,9 @@ app.use(cors
     credentials:true
   }
 ));
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 
-    }
-}));
+
 app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.session());
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(helmet());

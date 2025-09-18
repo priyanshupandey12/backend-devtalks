@@ -28,7 +28,9 @@ index: true,
   },
   password:{
     type:String,
-    required:true
+    required: function() {
+    return this.authProvider === 'local';
+  }
   },
 
   gender:{
