@@ -3,7 +3,12 @@ const mongoose=require('mongoose');
 const  bcrypt=require('bcrypt');
 const jwt=require('jsonwebtoken');
 const userSchema=mongoose.Schema({
-
+  
+ googleId: {
+type: String,
+sparse: true, 
+index: true,
+},
 
   firstName:{
     type:String,
@@ -105,13 +110,37 @@ isOnline:{
 },
 refreshToken: {
   type: String
-  }
+  },
+  authProvider: {
+  type: String,
+  enum: ['local', 'google'],
+  default: 'local',
+  },
+  emailVerificationToken: String,
+  emailVerificationExpires: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
+  lastLogin: {
+   type: Date,
+   default: null,
+   },
+  loginAttempts: {
+   type: Number,
+   default: 0,
+},
+  lockUntil: Date,
 
 },{timestamps:true});
 
-
+userSchema.index({ email: 1 });
+userSchema.index({ googleId: 1 });
+userSchema.index({ createdAt: -1 });
+userSchema.index({ lastLogin: -1 });
 userSchema.index({ "location.coordinates": "2dsphere" });
 
+userSchema.virtual('isLocked').get(function() {
+return !!(this.lockUntil && this.lockUntil > Date.now());
+});
 
 userSchema.methods.generateAccessToken= function () {
        return jwt.sign(
@@ -137,6 +166,43 @@ userSchema.methods.verifyPassword=async function(passwordbyuser){
 
   return isMatch
 }
+
+
+userSchema.methods.incLoginAttempts = async function() {
+try {
+
+if (this.lockUntil && this.lockUntil < Date.now()) {
+return this.updateOne({
+$unset: { lockUntil: 1 },
+$set: { loginAttempts: 1 }
+});
+}
+
+const updates = { $inc: { loginAttempts: 1 } };
+
+
+if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
+updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; 
+}
+
+return this.updateOne(updates);
+} catch (error) {
+logger.error('Error incrementing login attempts:', error);
+throw error;
+}
+};
+
+
+userSchema.methods.resetLoginAttempts = async function() {
+try {
+return this.updateOne({
+$unset: { loginAttempts: 1, lockUntil: 1 }
+});
+} catch (error) {
+logger.error('Error resetting login attempts:', error);
+throw error;
+}
+};
 const User=mongoose.model('User',userSchema);
 
 
