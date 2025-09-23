@@ -76,12 +76,12 @@ index: true,
   primaryGoal: {
     type: String,
     enum: ['Build a Startup', 'Portfolio Project', 'Learn a New Skill', 'Hackathon', 'Just for Fun','Learning', 'Building Projects', 'Hackathon', 'Networking', 'Job Search'],
-    default: ''
+  default: undefined 
   },
   userRole: {
     type: String,
     enum: ['Project Owner', 'Looking to Join','Developer','Designer'],
-    default: ''
+   default: undefined 
   },
 
   role: {
