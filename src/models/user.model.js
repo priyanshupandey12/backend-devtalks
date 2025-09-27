@@ -98,6 +98,8 @@ index: true,
 githubActivity: {
   last7dCommits: { type: Number, default: 0 },
   last3mCommits: { type: Number, default: 0 },
+  last7dScore: { type: Number, default: 0 },   
+  last3mScore: { type: Number, default: 0 }, 
   lastChecked: { type: Date, default: null }
 },
 isGithubActive7d: { type: Boolean, default: false },

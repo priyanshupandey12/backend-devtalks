@@ -83,7 +83,7 @@ const startGithubActivityCron = () => {
         try {
           const now = new Date();
   
-          // Calculate date ranges
+         
           const sevenDaysAgo = new Date();
           sevenDaysAgo.setDate(now.getDate() - 7);
 
@@ -106,17 +106,17 @@ const startGithubActivityCron = () => {
           const score3m = calculateActivityScore(contrib3m);
 
        
-          await User.findByIdAndUpdate(user._id, {
-            $set: {
-              'githubActivity.last7dScore': score7d,
-              'githubActivity.last3mScore': score3m,
-              'githubActivity.last7dCommits': contrib7d?.totalCommitContributions || 0,
-              'githubActivity.last3mCommits': contrib3m?.totalCommitContributions || 0,
-              'githubActivity.lastChecked': now,
-              'isGithubActive7d': score7d > 5,  
-              'isGithubActive3m': score3m > 15 
-            }
-          });
+      await User.findByIdAndUpdate(user._id, {
+  $set: {
+    "githubActivity.last7dScore": score7d,
+    "githubActivity.last3mScore": score3m,
+    "githubActivity.last7dCommits": contrib7d?.totalCommitContributions || 0,
+    "githubActivity.last3mCommits": contrib3m?.totalCommitContributions || 0,
+    "githubActivity.lastChecked": now,
+    isGithubActive7d: score7d > 5,
+    isGithubActive3m: score3m > 15,
+  },
+});
 
           
 
@@ -147,4 +147,4 @@ const startGithubActivityCron = () => {
 
 };
 
-module.exports={startGithubActivityCron,getGithubActivity}
+module.exports={startGithubActivityCron,getGithubActivity,calculateActivityScore}

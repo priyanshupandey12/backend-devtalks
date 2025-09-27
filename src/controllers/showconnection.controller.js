@@ -1,5 +1,6 @@
 const Connection = require('../models/connection.model');
 const User = require('../models/user.model');
+const mongoose = require('mongoose');
 
 const showpendingConnection = async (req, res) => {
    
@@ -71,232 +72,7 @@ const acceptingConnection = async (req, res) => {
   } 
 }
 
-// const choosingCardConnection = async (req, res) => {
-//  try {
-//     const currentUserId = req.user._id;
 
-//     // Extract query parameters
-//     const {
-//       skills,
-//       experienceLevel,
-//       activeWindow,
-//       locationRadius,
-//       primaryGoal,
-//       hoursPerWeek,
-//       page = 1,
-//       limit = 10,
-//       useAdvancedFilters = false 
-//     } = req.query;
-
-//     const useAdvancedFiltersFlag = useAdvancedFilters === 'true';
-//     const currentUser = await User.findById(currentUserId);
-//     if (!currentUser) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Current user not found"
-//       });
-//     }
-
-//     // STEP 1: Always exclude users with existing connections
-//     const connectionRequests = await Connection.find({
-//       $or: [
-//         { fromuserId: currentUserId },
-//         { toconnectionId: currentUserId }
-//       ]
-//     }).select('fromuserId toconnectionId');
-
-//     const excludeUserIds = new Set();
-//     connectionRequests.forEach(req => {
-//       excludeUserIds.add(req.fromuserId.toString());
-//       excludeUserIds.add(req.toconnectionId.toString());
-//     });
-
-//     // STEP 2: Build base query (always exclude connected users + self)
-//     let filterQuery = {
-//       _id: { 
-//         $nin: Array.from(excludeUserIds),
-//         $ne: currentUserId 
-//       }
-//     };
-
-//     // STEP 3: Apply advanced filters only if requested
-//     if (useAdvancedFiltersFlag) {
-      
-//       // GitHub Activity Filter
-//       if (activeWindow === "7d") {
-//         filterQuery.isGithubActive7d = true;
-//       } else if (activeWindow === "3m") {
-//         filterQuery.isGithubActive3m = true;
-//       }
-
-//       // Experience Level Filter
-//       if (experienceLevel) {
-//         const expLevels = Array.isArray(experienceLevel) 
-//           ? experienceLevel 
-//           : experienceLevel.split(',');
-//         filterQuery.experienceLevel = { $in: expLevels };
-//       }
-
-//       // Skills Filter
-//       if (skills) {
-//         const skillArray = Array.isArray(skills) 
-//           ? skills 
-//           : skills.split(',');
-//         filterQuery.skills = {
-//           $in: skillArray.map(skill => new RegExp(skill.trim(), 'i'))
-//         };
-//       }
-
-//       // Primary Goal Filter
-//       if (primaryGoal) {
-//         const goals = Array.isArray(primaryGoal) 
-//           ? primaryGoal 
-//           : primaryGoal.split(',');
-//         filterQuery.primaryGoal = { $in: goals };
-//       }
-
-//       // Hours per Week Filter
-//       if (hoursPerWeek) {
-//         filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
-//       }
-//     }
-
-//     // STEP 4: Determine which fields to return
-//     const feedFields = [
-//       'firstName', 
-//       'lastName', 
-//       'photoUrl', 
-//       'skills', 
-//       'description', 
-//       'gender',
-//       'experienceLevel',
-//       'primaryGoal',
-//       'commitment',
-//       'location',
-//       'isGithubActive7d',
-//       'isGithubActive3m'
-//     ];
-
-//     let users = [];
-//     let totalCount = 0;
-
-//     // STEP 5: Execute query (with or without location-based search)
-//     const parsedLimit = Math.min(parseInt(limit), 50); // Max 50 users per request
-//     const skip = (parseInt(page) - 1) * parsedLimit;
-
-//     if ( useAdvancedFiltersFlag &&
-//         currentUser.location?.coordinates?.length && 
-//         parseInt(locationRadius) > 0) {
-      
-//       // Use geospatial query for location-based search
-//       const geoQuery = [
-//         {
-//           $geoNear: {
-//             near: { type: "Point", coordinates: currentUser.location.coordinates },
-//             distanceField: "distance",
-//             maxDistance: parseInt(locationRadius) * 1000, // Convert km to meters
-//             spherical: true,
-//             query: filterQuery,
-//             key: "location.coordinates"
-//           }
-//         },
-//         { $skip: skip },
-//         { $limit: parsedLimit },
-//         { $project: feedFields.reduce((acc, field) => ({ ...acc, [field]: 1, distance: 1 }), {}) }
-//       ];
-
-//       users = await User.aggregate(geoQuery);
-      
-//       // Get total count for pagination (without skip/limit)
-//       const countQuery = [
-//         {
-//           $geoNear: {
-//             near: { type: "Point", coordinates: currentUser.location.coordinates },
-//             distanceField: "distance",
-//             maxDistance: parseInt(locationRadius) * 1000,
-//             spherical: true,
-//             query: filterQuery,
-//             key: "location.coordinates"
-//           }
-//         },
-//         { $count: "total" }
-//       ];
-      
-//       const countResult = await User.aggregate(countQuery);
-//       totalCount = countResult[0]?.total || 0;
-
-//     } else {
-//       // Use regular query
-//       users = await User.find(filterQuery)
-//         .select(feedFields.join(' '))
-//         .skip(skip)
-//         .limit(parsedLimit)
-//         .lean(); // Use lean() for better performance
-
-//       totalCount = await User.countDocuments(filterQuery);
-//     }
-
-//     // STEP 6: Handle empty results
-//     if (users.length === 0) {
-//       return res.status(200).json({
-//         success: true,
-//         message: useAdvancedFilters === 'true' 
-//           ? "No users found matching your filters" 
-//           : "No more users available",
-//         users: [],
-//         pagination: {
-//           current: parseInt(page),
-//           limit: parsedLimit,
-//           total: totalCount,
-//           totalPages: Math.ceil(totalCount / parsedLimit),
-//           hasNext: false,
-//           hasPrev: parseInt(page) > 1
-//         },
-//         appliedFilters: useAdvancedFilters === 'true' ? {
-//           skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
-//           experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
-//           locationRadius: parseInt(locationRadius) || null,
-//           primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
-//           hoursPerWeek,
-//           activeWindow
-//         } : null
-//       });
-//     }
-
-//     // STEP 7: Return successful response
-//     const totalPages = Math.ceil(totalCount / parsedLimit);
-    
-//     res.status(200).json({
-//       success: true,
-//       message: `Found ${users.length} users`,
-//       users,
-//       pagination: {
-//         current: parseInt(page),
-//         limit: parsedLimit,
-//         total: totalCount,
-//         totalPages,
-//         hasNext: parseInt(page) < totalPages,
-//         hasPrev: parseInt(page) > 1
-//       },
-//       appliedFilters: useAdvancedFilters === 'true' ? {
-//         skills: skills ? (Array.isArray(skills) ? skills : skills.split(',')) : [],
-//         experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
-//         locationRadius: parseInt(locationRadius) || null,
-//         primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
-//         hoursPerWeek,
-//         activeWindow
-//       } : null
-//     });
-
-//   } catch (error) {
-//     console.error("Error in getFeed:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error",
-//       error: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
-//     });
-//   }
-// }
 
 const choosingCardConnection = async (req, res) => {
     try {
@@ -327,13 +103,19 @@ const choosingCardConnection = async (req, res) => {
             $or: [{ fromuserId: currentUserId }, { toconnectionId: currentUserId }]
         }).select('fromuserId toconnectionId').lean();
 
-        const excludeUserIds = new Set(
-            connectionRequests.flatMap(req => [req.fromuserId.toString(), req.toconnectionId.toString()])
-        );
+          const excludeUserIds = new Set([currentUserId.toString()]);
+        connectionRequests.forEach(req => {
+            excludeUserIds.add(req.fromuserId.toString());
+            excludeUserIds.add(req.toconnectionId.toString());
+        });
 
-        
+          const excludeObjectIds = Array.from(excludeUserIds).map(id => new mongoose.Types.ObjectId(id));
+      
         let filterQuery = {
-            _id: { $nin: Array.from(excludeUserIds) } 
+            _id: { $nin: Array.from(excludeUserIds) } ,
+               ...(useAdvancedFilters && radiusKm > 0 ? {
+                'location.coordinates': { $ne: [0, 0] }
+            } : {})
         };
 
       
@@ -363,7 +145,10 @@ const choosingCardConnection = async (req, res) => {
              _id: 1, firstName: 1, lastName: 1, photoUrl: 1, skills: 1,
              description: 1, gender: 1, experienceLevel: 1, primaryGoal: 1,
              commitment: 1, location: 1, isGithubActive7d: 1, isGithubActive3m: 1,
-             distance: 1 
+             distance: 1 ,
+               "githubActivity.last7dCommits": 1,
+               "githubActivity.last3mCommits": 1,
+                 "githubActivity.lastChecked": 1
         };
 
         let users = [];
@@ -381,9 +166,15 @@ const choosingCardConnection = async (req, res) => {
                         distanceField: "distance",
                         maxDistance: radiusKm * 1000, 
                         query: filterQuery,
+                         key: "location.coordinates",
                         spherical: true
                     }
                 },
+                   {
+        $match: {
+            _id: { $nin: excludeObjectIds }  
+        }
+    },
                 {
                     $facet: {
                         data: [
@@ -445,7 +236,7 @@ const choosingCardConnection = async (req, res) => {
             error: process.env.NODE_ENV === "development" ? error.message : "An error occurred"
         });
     }
-}
+} 
 
 const mutualConnection = async (req, res) => {
     // 1. Get the currently logged-in user from the request.
@@ -567,22 +358,3 @@ module.exports = { showpendingConnection, acceptingConnection, choosingCardConne
 
 
 
-
-/*
-loggedInUserConnections:
-Tumhari (logged-in user) connection list me wo sab log fetch ho jayenge jinke sath tumhara status: 'accepted' hai.
-Agar tumne kisi ko friend request bheji aur usne accept kar li (tum fromuserId ho), ya phir kisi ne tumhe request bheji aur tumne accept kar liya (tum toconnectionId ho), wo sab iss list me aa jayenge.
-Example: Agar tum A ho aur tumhare friends B, C, aur D hain (jinse tumhara status "accepted" hai), to ye code A ke friends B, C, aur D ko list kar dega.  
-
-
-
-Ye dusre user ke friends ko check kar raha hai (maan lo ki dusra user “B” hai). Tum ye dekhna chahte ho ki jo dusra user (B) hai, uske connections me kaun log hain.
-
-otherUserConnections:
-Isme wo connections fetch honge jo B ke sath "accepted" status me hain.
-Yaani, ya to B ne kisi ko request bheji thi aur accept ho gayi, ya kisi ne B ko bheji thi aur usne accept ki thi.
-
-
-
-
-*/
