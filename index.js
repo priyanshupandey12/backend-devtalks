@@ -33,6 +33,7 @@ const projectRouter=require('./src/router/project.router');
 const chatRouter=require('./src/router/chat.router')
 const paymentRouter=require('./src/router/payment.router')
 const intiliazeSocket=require('./src/utils/socket')
+const { connectRedis } = require('./src/utils/redis');
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
 app.use('/api/v1/connection',connectionRouter);
@@ -50,9 +51,9 @@ intiliazeSocket(server)
 
 
 
-connectDB().then(()=>{
+connectDB().then(async ()=>{
  
-
+  await connectRedis();
    startGithubActivityCron();
   server.listen(7777,()=>{
     console.log('server is running on port 7777')

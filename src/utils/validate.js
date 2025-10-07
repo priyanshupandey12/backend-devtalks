@@ -19,7 +19,11 @@ const profileSchema = z.object({
   lastName: z.string().optional(),
   gender: z.enum(["Male", "Female", "Other"]).optional(),
   description: z.string().optional(),
-  photoUrl: z.string().url().optional(),
+ photoUrl:  z.union([
+  z.string().url(), 
+  z.instanceof(File), 
+  z.literal("") 
+]).optional(),
   skills: z.array(z.string()).optional(),
   location: z.union([
     z.string(), 
@@ -33,18 +37,20 @@ const profileSchema = z.object({
     hoursPerWeek: z.string().optional(),
     projectDuration: z.string().optional()
   }).optional(),
-  primaryGoal: z.enum([
-   'Build a Startup', 
-   'Portfolio Project', 
-   'Learn a New Skill', 
-   'Hackathon', 
-   'Just for Fun',
-   'Learning', 
-   'Building Projects',
-    'Hackathon', 
-    'Networking', 
-    'Job Search'
-  ]).optional(),
+primaryGoal: z.union([
+  z.enum([
+    "Build a Startup",
+    "Portfolio Project",
+    "Learn a New Skill",
+    "Hackathon",
+    "Just for Fun",
+    "Learning",
+    "Building Projects",
+    "Networking",
+    "Job Search"
+  ]),
+  z.literal("")
+]).optional(),
   userRole: z.enum(['Project Owner', 'Looking to Join','Developer','Designer']).optional(),
   links: z.object({
     githubUsername: z.string().optional(),
@@ -63,9 +69,15 @@ const validatesignUpData = (req) => {
 
 const validateProfileData = (req) => {
   const result = profileSchema.safeParse(req.body);
-  if (!result.success) {
-    throw new Error(result.error.errors[0].message);
-  }
+ if (!result.success) {
+
+  const errorMessage = result.error?.errors?.[0]?.message || "Invalid profile data provided. Please check your inputs.";
+  
+
+  console.error("Zod Validation Error:", result.error); 
+  
+  throw new Error(errorMessage);
+}
   return true;
 };
 
@@ -73,39 +85,5 @@ const validateProfileData = (req) => {
 
 
 
-const exampleSchema = z.object({
-  input: z.string().trim().min(1, "Input is required."),
-  output: z.string().trim().min(1, "Output is required."),
-  explanation: z.string().trim().optional(),
-});
 
-
-
-
-const problemSchema = z.object({
-  body: z.object({
-    title: z
-      .string()
-      .trim()
-      .min(1, "Title is required."),
-    description: z
-      .string()
-      .trim()
-      .min(1, "Description is required."),
-    topic: z
-      .string()
-      .trim()
-      .min(1, "Topic is required."),
-    difficulty: z.enum(["Easy", "Medium", "Hard"], {
-      required_error: "Difficulty level is required.",
-    }),
-
-    constraints: z.string().trim().optional(),
-    examples: z.array(exampleSchema).optional(),
- 
-
-  }),
-});
-
-
-module.exports = { validatesignUpData, validateProfileData,problemSchema };
+module.exports = { validatesignUpData, validateProfileData };
