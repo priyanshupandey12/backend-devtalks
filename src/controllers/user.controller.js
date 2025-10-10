@@ -116,11 +116,19 @@ const loginUp=async(req,res)=>{
     if(!user) {
     throw new Error('user emailid is not valid');
     }
+
+     if (user.lockUntil && user.lockUntil > Date.now()) {
+       return res.status(403).json({ message: 'Account locked. Please try again later.' });
+       }
+
     const isPasswordValid=await user.verifyPassword(password);
     if(!isPasswordValid) {
+       await user.incLoginAttempts();
       throw new Error('user password is not valid');
     }
-
+      await user.resetLoginAttempts();
+         user.lastLogin = new Date();
+           await user.save();
    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -189,6 +197,7 @@ const refreshAccessToken = async (req, res) => {
 
     if (incomingRefreshToken !== user?.refreshToken) {
         user.refreshToken = undefined;
+           await user.save({ validateBeforeSave: false });
          return res.status(403).json({ error: "Forbidden. Token reuse detected." });
     }
 
@@ -208,9 +217,9 @@ const refreshAccessToken = async (req, res) => {
       .json({
         message: "Access token refreshed",
         accessToken,
-        refreshToken: newRefreshToken
       });
   } catch (error) {
+      res.clearCookie("refreshToken", { httpOnly: true, secure: true });
     return res.status(401).json({ error: error.message });
   }
 };

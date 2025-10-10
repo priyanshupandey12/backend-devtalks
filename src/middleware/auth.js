@@ -26,6 +26,20 @@ const userAuth=async(req,res,next)=>{
      req.user=user;
     next();
   } catch (error) {
+
+      if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "jwt expired",
+      });
+    }
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
     res.status(error.statusCode || 400).json({
       success: false,
       message: error.message,

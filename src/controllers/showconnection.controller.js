@@ -1,3 +1,4 @@
+const { regex } = require('zod');
 const Connection = require('../models/connection.model');
 const User = require('../models/user.model');
 const mongoose = require('mongoose');
@@ -25,52 +26,76 @@ const showpendingConnection = async (req, res) => {
 
 const acceptingConnection = async (req, res) => {
   try {
+      const { lastActive, skills, sort = 'firstName', order = 'asc', page = 1, limit = 10,searchName } = req.query;
+    const pageNum=Math.max(parseInt(page) ,1)
+    const limitNum=Math.min(parseInt(limit) ,10)
+    const skip=(pageNum-1)*limitNum
     const loggedInUser = req.user;
 
     if (!loggedInUser || !loggedInUser._id) {
       return res.status(400).json({ error: "Invalid user data" });
     }
 
-    const connectionRequest = await Connection.find({ 
+   
+    const acceptedConnections  = await Connection.find({ 
       $or: [
         { fromuserId: loggedInUser._id, status: 'accepted' },
         { toconnectionId: loggedInUser._id, status: 'accepted' }
       ] 
-    }).populate('fromuserId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender','isOnline'])
-      .populate('toconnectionId', ['firstName', 'lastName', 'photoUrl', 'skills', 'description', 'gender','isOnline']);
+    })
 
-    const data = connectionRequest.reduce((acc, item) => {
-      let connection;
-      if (item.fromuserId && item.fromuserId._id && item.fromuserId._id.toString() === loggedInUser._id.toString()) {
-        connection = item.toconnectionId;
-      } else if (item.toconnectionId && item.toconnectionId._id) {
-        connection = item.fromuserId;
-      }
+    
 
-      if (connection && connection._id) {
-        acc.push({
-          _id: connection._id,
-          firstName: connection.firstName || 'Unknown',
-          lastName: connection.lastName || 'User',
-          photoUrl: connection.photoUrl || '',
-          skills: connection.skills || [],
-          description: connection.description || '',
-          gender: connection.gender || ''
-        });
-      }
+   const userIDs=acceptedConnections.map(conn=>
+    conn.fromuserId.toString()===loggedInUser._id.toString()? conn.toconnectionId.toString() :conn.fromuserId.toString()
+  )
 
-      return acc;
-    }, []);
+    const filter={_id:{$in:userIDs}};
+
+    if(skills) {
+      const skillList=skills.split(',').map(skill=>skill.trim());
+        filter.skills= { 
+    $elemMatch: { $regex: skillList.join('|'), $options: 'i' } 
+  };
+    }
+
+        if (lastActive) {
+      const days = parseInt(lastActive);
+      const threshold = new Date();
+      threshold.setDate(threshold.getDate() - days);
+      filter.lastLogin = { $gte: threshold };
+    }
+
+    if(searchName) {
+      filter.firstName={$regex:`^${searchName}`,$options:'i'}
+    }
+
+ const sortCondition = {};
+    sortCondition[sort] = order === 'asc' ? 1 : -1;
+
+
+    const connectedUsers = await User.find(filter)
+      .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin')
+      .sort(sortCondition)
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await User.countDocuments(filter);
 
     return res.status(200).json({
       message: 'Connected users',
-      data
+      total,
+      page: pageNum,
+      limit: limitNum,
+      data: connectedUsers
     });
+
   } catch (error) {
     console.error('Error in acceptingConnection:', error);
     return res.status(500).json({ error: 'An unexpected error occurred' });
   } 
 }
+
 
 
 
@@ -145,7 +170,7 @@ const choosingCardConnection = async (req, res) => {
              _id: 1, firstName: 1, lastName: 1, photoUrl: 1, skills: 1,
              description: 1, gender: 1, experienceLevel: 1, primaryGoal: 1,
              commitment: 1, location: 1, isGithubActive7d: 1, isGithubActive3m: 1,
-             distance: 1 ,
+             distance: 1 ,userRole:1,
                "githubActivity.last7dCommits": 1,
                "githubActivity.last3mCommits": 1,
                  "githubActivity.lastChecked": 1
