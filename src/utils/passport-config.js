@@ -1,7 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User=require('../models/user.model');
-
+const logger = require('../utils/logger');
 
 
 passport.use(new GoogleStrategy({
@@ -11,7 +11,7 @@ passport.use(new GoogleStrategy({
 },
 async(accessToken, refreshToken, profile, done) => {
            try {
-              console.log('Google OAuth: Processing user:', profile.emails?.[0]?.value);
+            logger.debug(`Google OAuth: Processing user profile. ID: ${profile.id}, Email: ${userEmail}`);
                 let user = await User.findOne({
           $or: [
             { googleId: profile.id },
@@ -30,7 +30,7 @@ async(accessToken, refreshToken, profile, done) => {
           user.lastLogin = new Date();
 
           await user.save();
-          console.log(`Google OAuth: Existing user logged in: ${user.emailId}`);
+          logger.info(`Google OAuth: Existing user logged in: ${user.emailId} (ID: ${user._id})`);
         } else {
         
           user = new User({
@@ -50,9 +50,14 @@ async(accessToken, refreshToken, profile, done) => {
 
         done(null, user);
            } catch (error) {
-               console.error('Google OAuth Strategy error:', error);
+               logger.error(`Google OAuth Strategy error for profile ID ${profile.id}: ${error.message}`, {
+        profileId: profile.id,
+        stack: error.stack
+      });
+
+      done(error, null);
     
-        done(error, null);
+        
            }
 }));
 

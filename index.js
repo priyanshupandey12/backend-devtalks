@@ -9,6 +9,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require("helmet");
 const morgan = require('morgan');
 const { startGithubActivityCron }=require('./src/utils/githubcron')
+const ratelimit=require('express-rate-limit')
+const logger=require('./src/utils/logger')
 
 const passport = require('./src/utils/passport-config');
 app.use(cors
@@ -22,8 +24,26 @@ app.use(passport.initialize());
 app.use(express.json());
 app.use(mongoSanitize());
 app.use(helmet());
-app.use(morgan('dev'));
+const morganStream = {
+  write: (message) => {
+    logger.http(message.trim());
+  },
+};
+app.use(morgan('dev', { stream: morganStream }));
 app.use(cookieParser());
+
+const limiter = ratelimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: {
+    status: 429,
+    message: "Too many requests, please try again later."
+  },
+  standardHeaders: true, 
+  legacyHeaders: false, 
+});
+
+app.use(limiter)
 
 const userRouter=require('./src/router/user.route');
 const profileRouter=require('./src/router/profile.router');
@@ -47,18 +67,19 @@ const server=http.createServer(app)
 intiliazeSocket(server)
 
 
-
+logger.info("Application starting up...");
 
 
 
 connectDB().then(async ()=>{
- 
+ logger.debug("Database connection successful.");
   await connectRedis();
+  logger.info("Redis connection successful.");
    startGithubActivityCron();
   server.listen(7777,()=>{
-    console.log('server is running on port 7777')
+  logger.info('Server is running on port 7777');
   })
 }).catch((err)=>{
-  console.log('database not connected')
-  console.log(err)
+  logger.error('Failed to connect to the database', err); 
+  process.exit(1)
 });

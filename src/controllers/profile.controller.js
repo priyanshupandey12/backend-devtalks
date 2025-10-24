@@ -12,25 +12,26 @@ function getPublicIdFromUrl(url) {
 
 const viewProfile=async(req,res)=>{
   const user=req.user;
-  const token=req.accessToken
-  return res.status(200).json({user,token});  
+  return res.status(200).json({user});  
 }
 
 const editProfile = async (req, res) => {
   try {
-     if (req.body.commitment && typeof req.body.commitment === 'string') {
-      req.body.commitment = JSON.parse(req.body.commitment);
-    }
+  
     if (req.body.links && typeof req.body.links === 'string') {
       req.body.links = JSON.parse(req.body.links);
     }
-    const isDataValid = validateProfileData(req);
+     const validationResult = validateProfileData(req.body);
+
+  if (!validationResult.success) {
+    return res.status(400).json({
+      error: "Invalid data provided. Please check your inputs.",
+      details: validationResult.errors, 
+    });
+  }
     const imageLocalFilePath=req.file?.path;
 
 
-    if (!isDataValid) {
-      throw new Error('Invalid Edit Data Request');
-    }
 
     const loggedInUser = req.user;
 
@@ -92,7 +93,6 @@ enumFields.forEach(field => {
 
     return res.status(200).json({
         user: userToReturn,
-      accessToken: token
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });

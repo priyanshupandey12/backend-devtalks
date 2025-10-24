@@ -2,7 +2,6 @@ const User=require('../models/user.model');
 const {validatesignUpData}=require('../utils/validate');
 const bcrypt=require('bcrypt')
 const jwt=require('jsonwebtoken');
-const geocodeAddress=require('../utils/geocode');
 const {RtcTokenBuilder,RtcRole}=require('agora-token')
 
 
@@ -40,55 +39,24 @@ const signUp=async(req,res)=>{
       emailId,
       password,   
       gender,
-      description,
-      photoUrl,
-      skills,
-      experienceLevel,
-      location,
-      timezone,
-      commitment,
-      primaryGoal,
-      userRole,
-      links}=req.body;
+     educationYear,
+    }=req.body;
  
    const passwordhash=await bcrypt.hash(password,10);
 
-    let geoLocation = {
-      type: "Point",
-      coordinates: [0, 0],
-      address: ""
-    };
 
-    if (location) {
-      const [lng, lat] = await geocodeAddress(location);
-      geoLocation = {
-        type: "Point",
-        coordinates: [lng, lat],
-        address: location
-      };
-    }
 
    const newUser=await User.create({
     firstName,
     lastName,
     emailId,
     password:passwordhash,
-      gender: gender || "",
-      description: description || "",
-      photoUrl: photoUrl || "",
-     skills: skills || [],
-      experienceLevel: experienceLevel,
-      location: geoLocation,
-      timezone: timezone ,
-      commitment: commitment,
-      primaryGoal: primaryGoal ,
-      userRole: userRole ,
-         links: {
-        githubUsername: links?.githubUsername || "",
-        linkedin: links?.linkedin || "",
-        portfolio: links?.portfolio || ""
+    gender: gender || "",
+    educationYear,
+    authProvider: 'local',
+
       },
-   });
+  );
 
  const savedUser=  await newUser.save();
   const userWithoutPassword = savedUser.toObject();
@@ -141,7 +109,7 @@ const loginUp=async(req,res)=>{
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json({ user: loggedInUser, accessToken }); 
+    .json({ user: loggedInUser }); 
   } catch (error) {
     return res.status(400).json("ERROR : "+error.message);
   }

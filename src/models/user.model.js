@@ -43,6 +43,15 @@ index: true,
     type:String,
     default:"",
   },
+
+  educationYear: {
+  type: String,
+  enum: ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate'],
+   },
+collegeName: String,
+fieldOfStudy: String,
+
+
   skills:{
     type:[String],
   } ,
@@ -68,21 +77,53 @@ index: true,
     type: String, 
     default: ''
   },
-  commitment: {
-    hoursPerWeek: { type: String, default: '' },
-    projectDuration: { type: String, default: '' }
-  },
 
   primaryGoal: {
     type: String,
-    enum: ['Build a Startup', 'Portfolio Project', 'Learn a New Skill', 'Hackathon', 'Just for Fun','Learning', 'Building Projects', 'Hackathon', 'Networking', 'Job Search'],
-  default: undefined 
+    enum: ['Build a Startup', 
+      'Portfolio Project', 
+      'Learn a New Skill', 
+      'Hackathon', 'Just for Fun','Learning', 'Building Projects', 'Hackathon', 'Networking', 'Job Search',    'Project Partner',
+    'Learning Partner',
+    'Mentor',
+    'Mentee',
+    'Internship',
+    'Job',
+    'Freelance Collaboration',],
+  default: 'Learn a New Skill'
   },
   userRole: {
     type: String,
-    enum: ['Project Owner', 'Looking to Join','Developer','Designer'],
-   default: undefined 
+    enum: ['Designer','Student', 
+    'Frontend Developer',
+    'Backend Developer',
+    'Fullstack Developer',
+    'Designer',
+    'Data Scientist',
+     'Data Analyst',
+    'DevOps Engineer',
+    'Other',],
+   default: 'Student'
   },
+
+  experienceLevel: {
+  type: String,
+  enum: ['Beginner', 'Intermediate', 'Advanced'],
+},
+yearsOfExperience: {
+  type: Number,
+  default: 0,
+},
+rating: {
+  type: Number,
+  min: 0,
+  max: 5,
+  default: 0,
+},
+verified: {
+  type: Boolean,
+  default: false,
+},
 
   role: {
   type: String,

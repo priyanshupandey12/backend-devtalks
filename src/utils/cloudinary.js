@@ -1,5 +1,6 @@
 const cloudinary=require('cloudinary').v2
 const fs=require('fs')
+const logger=require('../utils/logger')
 
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -9,17 +10,21 @@ cloudinary.config({
 
 const uploadOnCloudinary = async (localFilePath) => {
     try {
-        if (!localFilePath) return null
+        if (!localFilePath){
+          logger.debug("Cloudinary upload skipped: localFilePath is null or undefined.");
+          return null
+        } 
     
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "image"
         })
      
-   
+     logger.debug(`File uploaded to Cloudinary successfully. URL: ${response.secure_url}`);
         fs.unlinkSync(localFilePath)
         return response;
 
     } catch (error) {
+      logger.error(`Failed to upload file to Cloudinary. Path: ${localFilePath}`, error);
         fs.unlinkSync(localFilePath) 
         return null;
     }
@@ -28,20 +33,23 @@ const uploadOnCloudinary = async (localFilePath) => {
 
 const deleteFromCloudinary=async(publicID)=>{
     try {
-        if(!publicID) return null;
+       if (!publicID) {
+      logger.debug("Cloudinary delete skipped: publicID is null or undefined.");
+      return null;
+    }
         const response=await cloudinary.uploader.destroy(publicID,{
             resource_type:"image"
         })
         
     if (response.result === "ok") {
-      console.log("file is deleted from cloudinary ", response);
+     logger.debug(`File deleted from Cloudinary. Public ID: ${publicID}`);
     } else {
-      console.log(" File not found or already deleted:");
+      logger.warn(`File not found on Cloudinary or already deleted. Public ID: ${publicID}`);
     }
 
     return response;
     } catch (error) {
-  console.error(" Error deleting file from Cloudinary:", error);
+    logger.error(`Error deleting file from Cloudinary. Public ID: ${publicID}`, error);
     return null;
     }
 }

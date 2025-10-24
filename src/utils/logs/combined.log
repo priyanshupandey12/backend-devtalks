@@ -1,0 +1,178 @@
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:19:35"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:19:37"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:19:37"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:19:37"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:20:19"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:20:19"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:20:19"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:20:19"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:20:45"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:20:45"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:20:45"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:20:45"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:20:59"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:21:01"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:21:01"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:21:01"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:21:19"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:21:19"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:21:19"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:21:19"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:21:24"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:21:25"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:21:25"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:21:25"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:21:35"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:21:35"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:21:35"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:21:35"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:26:03"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:26:04"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:26:04"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:26:04"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:07"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:11"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:14"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:17"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:28:18"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:28:18"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:28:18"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:21"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:28:22"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:28:22"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:28:22"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:48"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:28:50"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:28:50"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:28:51"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:28:51"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:29:08"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:29:10"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:29:10"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:29:10"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:29:24"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:29:25"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:29:25"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:29:25"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:29:37"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:29:37"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:29:37"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:29:37"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:29:50"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:29:50"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:29:50"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:29:50"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:30:03"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:30:07"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:30:09"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:30:09"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:30:09"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:34:19"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:34:20"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:34:20"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:34:20"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:34:32"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:34:34"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:34:34"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:34:34"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:34:51"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:34:51"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:34:51"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:34:51"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:35:03"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:35:04"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:35:04"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:35:04"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:35:14"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:35:16"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:35:16"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:35:16"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:35:31"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:35:33"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:35:33"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:35:33"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:35:46"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:35:47"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:35:47"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:35:47"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:05"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:07"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:07"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:07"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:09"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:11"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:11"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:11"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:32"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:33"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:33"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:33"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:36"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:37"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:37"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:37"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:45"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:46"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:46"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:46"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:36:55"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:36:55"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:36:55"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:36:55"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:36:55"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:38:48"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:38:49"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:38:49"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:38:49"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:38:49"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:39:14"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:39:15"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:39:15"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:39:15"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:39:15"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:39:49"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:39:51"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:39:52"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:39:52"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:39:52"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:39:52"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:40:13"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:40:13"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:40:13"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:40:14"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:40:14"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:40:18"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:40:19"}
+{"level":"error","message":"Failed to connect to the database lo is not defined","stack":"ReferenceError: lo is not defined\n    at connectRedis (E:\\devtalks-backend\\backend-devtalks\\src\\utils\\redis.js:10:9)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async E:\\devtalks-backend\\backend-devtalks\\index.js:76:3","timestamp":"2025-10-24 20:40:19"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:40:25"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:40:28"}
+{"level":"debug","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:40:28"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:40:28"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:40:28"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:40:28"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:41:11"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:41:12"}
+{"level":"info","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:41:12"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:41:12"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:41:12"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:41:12"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:41:30"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:41:35"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:41:35"}
+{"level":"info","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:41:35"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:41:35"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:41:35"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:41:35"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:41:38"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:41:38"}
+{"level":"info","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:41:38"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:41:38"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:41:39"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:41:39"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:41:57"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:42:04"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:42:06"}
+{"level":"info","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:42:06"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:42:06"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:42:06"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:42:06"}

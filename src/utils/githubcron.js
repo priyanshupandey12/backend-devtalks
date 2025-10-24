@@ -1,6 +1,7 @@
 const axios=require('axios');
 const cron = require("node-cron");
 const User=require('../models/user.model')
+const logger = require('../utils/logger');
 
 
 async function getGithubActivity(username, sinceDate) {
@@ -18,7 +19,7 @@ async function getGithubActivity(username, sinceDate) {
   `;
 
   try {
-   
+   logger.debug(`Fetching GitHub activity for ${username} since ${sinceDate}`);
     const res = await axios.post(
       "https://api.github.com/graphql",
       {
@@ -36,10 +37,14 @@ async function getGithubActivity(username, sinceDate) {
         timeout: 10000
       }
     );
-
+logger.debug(`Successfully fetched GitHub activity for ${username}`);
     return res.data.data.user.contributionsCollection;
   } catch (err) {
-    console.error("GitHub API error:", err.response?.data || err.message);
+  const errorMsg = err.response?.data?.message || err.response?.data || err.message;
+    logger.error(`GitHub API error for user ${username}: ${errorMsg}`, {
+      username: username,
+      statusCode: err.response?.status
+    });
     return null;
   }
 }
@@ -67,13 +72,13 @@ function calculateActivityScore(contributions) {
 const startGithubActivityCron = () => {
   cron.schedule("0 2 * * *", async () => {
   
-
+logger.info("GitHub activity cron job STARTING...");
     try {
       const users = await User.find({ 
         "links.githubUsername": { $exists: true, $ne: "" } 
       });
 
-    
+    logger.info(`Found ${users.length} users with GitHub usernames to process.`);
 
       let processedUsers = 0;
       let activeUsers7d = 0;
@@ -100,7 +105,7 @@ const startGithubActivityCron = () => {
             user.links.githubUsername, 
             threeMonthsAgo.toISOString()
           );
-
+      logger.debug(`Processing GitHub activity for user: ${user.emailId}`);
       
           const score7d = calculateActivityScore(contrib7d);
           const score3m = calculateActivityScore(contrib3m);
@@ -131,20 +136,23 @@ const startGithubActivityCron = () => {
           await new Promise(resolve => setTimeout(resolve, 100));
           
         } catch (userError) {
-          console.error(`❌ Error processing user ${user.emailId}:`, userError.message);
+          logger.warn(`Error processing GitHub data for user ${user.emailId} (ID: ${user._id}): ${userError.message}`, {
+            userId: user._id,
+            stack: userError.stack 
+          });
         }
       }
 
     
 
     } catch (err) {
-      console.error("❌ Cron job failed:", err);
+      logger.error("Fatal error in GitHub activity cron job:", err);
     }
   }, {
     scheduled: true,
     timezone: "Asia/Kolkata"
   });
-
+logger.info("GitHub activity cron job scheduled successfully.");
 };
 
 module.exports={startGithubActivityCron,getGithubActivity,calculateActivityScore}

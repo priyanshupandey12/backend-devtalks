@@ -1,4 +1,4 @@
-const { regex } = require('zod');
+
 const Connection = require('../models/connection.model');
 const User = require('../models/user.model');
 const mongoose = require('mongoose');
@@ -10,7 +10,7 @@ const showpendingConnection = async (req, res) => {
     const loggedInUser = req.user;
 
 
-    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl']);
+    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl','skills','experienceLevel','primaryGoal','lastLogin','location.address','educationYear','yearsOfExperience','userRole']);
 
  
 
@@ -75,7 +75,7 @@ const acceptingConnection = async (req, res) => {
 
 
     const connectedUsers = await User.find(filter)
-      .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin')
+      .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin yearsOfExperience educationYear')
       .sort(sortCondition)
       .skip(skip)
       .limit(limitNum);
@@ -109,7 +109,8 @@ const choosingCardConnection = async (req, res) => {
             experienceLevel,
             activeWindow,
             primaryGoal,
-            hoursPerWeek,
+            userRole,       
+            educationYear 
         } = req.query;
 
         const useAdvancedFilters = req.query.useAdvancedFilters === 'true';
@@ -147,7 +148,7 @@ const choosingCardConnection = async (req, res) => {
         if (useAdvancedFilters) {
             if (activeWindow === "7d") filterQuery.isGithubActive7d = true;
             if (activeWindow === "3m") filterQuery.isGithubActive3m = true;
-            if (hoursPerWeek) filterQuery['commitment.hoursPerWeek'] = hoursPerWeek;
+       
 
             if (experienceLevel) {
                 const expLevels = Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',');
@@ -163,14 +164,25 @@ const choosingCardConnection = async (req, res) => {
                 const goals = Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',');
                 filterQuery.primaryGoal = { $in: goals };
             }
+
+                if (userRole) {
+         
+                filterQuery.userRole = { $in: userRole.split(',').map(r => r.trim()) };
+            }
+
+   
+            if (educationYear) {
+           
+                filterQuery.educationYear = { $in: educationYear.split(',').map(y => y.trim()) };
+            }
         }
         
      
         const feedFields = {
              _id: 1, firstName: 1, lastName: 1, photoUrl: 1, skills: 1,
-             description: 1, gender: 1, experienceLevel: 1, primaryGoal: 1,
+             description: 1, experienceLevel: 1, primaryGoal: 1,
              commitment: 1, location: 1, isGithubActive7d: 1, isGithubActive3m: 1,
-             distance: 1 ,userRole:1,
+             distance: 1 ,userRole:1,educationYear:1,collegeName:1,fieldOfStudy:1,yearsOfExperience:1,
                "githubActivity.last7dCommits": 1,
                "githubActivity.last3mCommits": 1,
                  "githubActivity.lastChecked": 1
@@ -179,7 +191,7 @@ const choosingCardConnection = async (req, res) => {
         let users = [];
         let totalCount = 0;
 
-        // STEP 6: Execute the query
+        
         const hasLocationFilter = useAdvancedFilters && currentUser.location?.coordinates?.length && radiusKm > 0;
 
         if (hasLocationFilter) {
@@ -241,7 +253,6 @@ const choosingCardConnection = async (req, res) => {
              experienceLevel: experienceLevel ? (Array.isArray(experienceLevel) ? experienceLevel : experienceLevel.split(',')) : [],
              locationRadius: radiusKm || null,
              primaryGoal: primaryGoal ? (Array.isArray(primaryGoal) ? primaryGoal : primaryGoal.split(',')) : [],
-             hoursPerWeek,
              activeWindow
         } : null;
 
@@ -263,123 +274,11 @@ const choosingCardConnection = async (req, res) => {
     }
 } 
 
-const mutualConnection = async (req, res) => {
-    // 1. Get the currently logged-in user from the request.
-  // 2. Get the ID of the other user from the request parameters
- //3. Fetch the connections of the logged-in user (their friends).
- //4. Fetch the connections of the other user (the user whose connections we want to check).
-  // 5. Create a Set of IDs for the logged-in user's friends.
- // 6. Get mutual connections by filtering the other user's connections.
-  // 7. Fetch the user data for the mutual connections found.
-
-
-   try {
-  
-    const loggedInUser = req.user; // Logged-in user details
-
- 
-     const otherUserId = req.params.id; // ID of the user whose connections we want to check
-
-     if(!loggedInUser){
-     
-        return res.status(400).json({ message: "User is not authenticated" });
-     }
-
-
- //  loggedInUserConnections = Tumhare apne friends.
-     const loggedInUserConnections =await Connection.find({
-      $or:
-      [
-         
-        // a. Check if the logged-in user sent friend requests that are accepted.
-
-        {fromuserId:loggedInUser._id, status:'accepted'},
-
-        // b. Check if the logged-in user received friend requests that are accepted.
-
-        {toconnectionId:loggedInUser._id, status:'accepted'}
-
-      ]
-     })
-  
-
-  //otherUserConnections = Us dusre user ke friends jisko tum dekh rahe ho.
-     const otherUserConnections = await Connection.find({
-
-      $or:
-      [
-   // a. Check if the other user sent friend requests that are accepted.
-    
-      { fromuserId: otherUserId, status: 'accepted' },
-
-     // b. Check if the other user received friend requests that are accepted.
-     
-       { toconnectionId: otherUserId, status: 'accepted' }
-        
-    ] 
-        })
-
-       //yha kisne kiso request bheji hain yh check krke uski id store krna hain
-
-     const loggedInUserIds = new Set(loggedInUserConnections.map(connection => 
-           
-    // a. If the connection's fromuserId matches the logged-in user's ID,
-    
-       connection.fromuserId.toString() === loggedInUser._id.toString() 
-      
-       //    take the toconnectionId (friend).
-   
-       ? connection.toconnectionId.toString() 
-      
-       // b. Otherwise, take the fromuserId (the friend).
-    
-       : connection.fromuserId.toString()
-    
-       )); 
-
-
-       //yha kisne kiso request bheji hain yh check krke uski id store krna hain
-
-        const mutualConnectionIds = otherUserConnections
-        .map(conn =>
-
-       // a. If the connection's fromuserId is the other user's ID,
-     
-          
-       conn.fromuserId.toString() === otherUserId ? 
-       
-       //take the toconnectionId (friend).
-         
-       conn.toconnectionId.toString() : 
-           
-       // b. Otherwise, take the fromuserId (the friend).
-        
-       conn.fromuserId.toString())
-       
-       .filter(id => loggedInUserIds.has(id));// c. Keep only the IDs that are in the logged-in user's friends.
-
-     
-   const mutualConnectionData = await User.find(
-    { 
-      _id: { $in: mutualConnectionIds } 
-    }).select(['firstName', 'lastName', 'photoUrl']);
-        
-        
-  return res.status(200)
-  .json({ message: 'Mutual connections', data: mutualConnectionData });
-   
-   } catch (error) {
-    
-    console.error('Error in findMutualConnections:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-   }
-
-
-}
 
 
 
-module.exports = { showpendingConnection, acceptingConnection, choosingCardConnection, mutualConnection};
+
+module.exports = { showpendingConnection, acceptingConnection, choosingCardConnection};
 
 
 
