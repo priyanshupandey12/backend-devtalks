@@ -176,3 +176,9 @@
 {"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:42:06"}
 {"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:42:06"}
 {"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:42:06"}
+{"level":"info","message":"Application starting up...","timestamp":"2025-10-24 20:42:09"}
+{"level":"debug","message":"Database connection successful.","timestamp":"2025-10-24 20:42:10"}
+{"level":"info","message":"Successfully connected to Redis!","timestamp":"2025-10-24 20:42:10"}
+{"level":"info","message":"Redis connection successful.","timestamp":"2025-10-24 20:42:10"}
+{"level":"info","message":"GitHub activity cron job scheduled successfully.","timestamp":"2025-10-24 20:42:10"}
+{"level":"info","message":"Server is running on port 7777","timestamp":"2025-10-24 20:42:10"}
