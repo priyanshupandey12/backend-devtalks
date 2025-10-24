@@ -3,3 +3,5 @@ node_modules
 .env
 public
 router.md
+/src/utils/logs/
+*.log
