@@ -4,10 +4,10 @@ const router=express.Router();
 const {signUp,loginUp,logOut,changePassword,  refreshAccessToken, generateAgoraToken}=require('../controllers/user.controller');
 const {userAuth}=require('../middleware/auth');
 const passport=require('../utils/passport-config')
-const authLimiter=require('../middleware/ratelimiter')
+const {loginLimiter,SignLimiter}=require('../middleware/ratelimiter')
 
-router.route('/signup').post(authLimiter,signUp);
-router.route('/login').post(authLimiter,loginUp);
+router.route('/signup').post(SignLimiter,signUp);
+router.route('/login').post(loginLimiter,loginUp);
 router.route('/logout').get(userAuth,logOut);
 router.route("/refresh-token").post(refreshAccessToken)
 router.route('/change-password').post(userAuth,changePassword);

@@ -1,9 +1,9 @@
 const User=require('../models/user.model');
-const {validatesignUpData}=require('../utils/validate');
+const {validatesignUpData,validateloginData}=require('../utils/validate');
 const bcrypt=require('bcrypt')
 const jwt=require('jsonwebtoken');
 const {RtcTokenBuilder,RtcRole}=require('agora-token')
-
+const logger=require('../utils/logger')
 
 
 const generateAccessAndRefereshTokens = async(userId) =>{
@@ -24,132 +24,253 @@ const generateAccessAndRefereshTokens = async(userId) =>{
 }
 
 
-const signUp=async(req,res)=>{
-
- try {
+const signUp = async (req, res) => {
   
+  logger.debug(`Signup attempt for email: ${req.body.emailId}`);
 
-  validatesignUpData(req);
 
-  
-  
-  const{
-     firstName,
+  const validationResult = validatesignUpData(req.body);
+
+  if (!validationResult.success) {
+
+    const firstErrorField = Object.keys(validationResult.errors)[0];
+    const firstErrorMessage = validationResult.errors[firstErrorField][0];
+    
+    logger.warn(`Signup validation failed for ${req.body.emailId}: ${firstErrorMessage}`, {
+      allErrors: validationResult.errors 
+    });
+    
+    return res.status(400).json({ 
+      success: false,
+      message: firstErrorMessage,
+      errors: validationResult.errors 
+    });
+  }
+
+ 
+  try {
+
+    const {
+      firstName,
       lastName,
       emailId,
-      password,   
+      password,
       gender,
-     educationYear,
-    }=req.body;
+      educationYear,
+    } = validationResult.data; 
+
+  
+    const passwordhash = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordhash,
+      gender: gender || "",
+      educationYear,
+      authProvider: 'local',
+    });
+
+    const userWithoutPassword = {
+      _id: newUser._id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      emailId: newUser.emailId,
+      photoUrl: newUser.photoUrl,
+      role: newUser.role
+    };
+
  
-   const passwordhash=await bcrypt.hash(password,10);
-
-
-
-   const newUser=await User.create({
-    firstName,
-    lastName,
-    emailId,
-    password:passwordhash,
-    gender: gender || "",
-    educationYear,
-    authProvider: 'local',
-
-      },
-  );
-
- const savedUser=  await newUser.save();
-  const userWithoutPassword = savedUser.toObject();
-    delete userWithoutPassword.password;
+    logger.info(`New user created: ${newUser.emailId} (ID: ${newUser._id})`);
 
     return res
-      .status(200)
+      .status(201) 
       .json({ message: "User created successfully", data: userWithoutPassword });
 
+  } catch (error) {
 
- }
- 
- catch (error) {
-  return res.status(400).json("ERROR : "+error.message);
- }
+    if (error.code === 11000) {
+      logger.warn(`Signup failed: Email already in use: ${req.body.emailId}`);
+      return res.status(409).json({ 
+        success: false,
+        message: "This email address is already registered."
+      });
+    }
+
+  
+    logger.error(`Unhandled error in user signup for ${req.body.emailId}: ${error.message}`, {
+      stack: error.stack
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: "An internal server error occurred. Please try again later."
+    });
+  }
 };
 
 const loginUp=async(req,res)=>{
 
+  const validationResult=validateloginData(req.body);
+  if(!validationResult.success) {
+        const firstErrorField = Object.keys(validationResult.errors)[0];
+    const firstErrorMessage = validationResult.errors[firstErrorField][0];
+    
+    logger.warn(`login validation failed for ${req.body.emailId}: ${firstErrorMessage}`, {
+      allErrors: validationResult.errors 
+    });
+    
+    return res.status(400).json({ 
+      success: false,
+      message: firstErrorMessage,
+      errors: validationResult.errors 
+    });
+  }
+
+  const{emailId,password} = validationResult.data;
+
   try {
-    const{emailId,password}=req.body;
+    logger.debug(`Login attempt for email: ${emailId}`);
 
     const user=await User.findOne({emailId:emailId });
 
-    if(!user) {
-    throw new Error('user emailid is not valid');
-    }
+  
 
      if (user.lockUntil && user.lockUntil > Date.now()) {
-       return res.status(403).json({ message: 'Account locked. Please try again later.' });
+   logger.warn(`Login failed: Account locked for ${emailId}`);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Account locked. Please try again later.' 
+      });
        }
 
-    const isPasswordValid=await user.verifyPassword(password);
-    if(!isPasswordValid) {
-       await user.incLoginAttempts();
-      throw new Error('user password is not valid');
-    }
-      await user.resetLoginAttempts();
-         user.lastLogin = new Date();
-           await user.save();
-   const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+   const isPasswordValid = user ? await user.verifyPassword(password) : false;
 
-     const options = {
-        httpOnly: true,
-        secure: true
+    if (!user || !isPasswordValid) {
+      if (user) {
+
+        await user.incLoginAttempts();
+        logger.warn(`Login failed: Invalid password for ${emailId}. Attempt ${user.loginAttempts}`);
+      } else {
+       
+        logger.warn(`Login failed: User not found for ${emailId}`);
+      }
+      
+
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid email or password.' 
+      });
     }
 
-     return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json({ user: loggedInUser }); 
+ 
+    await user.resetLoginAttempts();
+    user.lastLogin = new Date();
+    await user.save();
+
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
+    
+  
+    const loggedInUser = {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      emailId: user.emailId,
+      photoUrl: user.photoUrl,
+      role: user.role
+    }; 
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' 
+    };
+    
+ 
+    logger.info(`Login successful for ${emailId} (ID: ${user._id})`);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json({ user: loggedInUser });
   } catch (error) {
-    return res.status(400).json("ERROR : "+error.message);
+   logger.error(`Unhandled error in login for ${emailId}: ${error.message}`, {
+      stack: error.stack
+    });
+
+    return res.status(500).json({ 
+      success: false,
+      message: "An internal server error occurred. Please try again later."
+    });
+  
   }
 
 
 };
 
-const logOut=async(req,res)=>{
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $unset: {
-                refreshToken: 1 
-            }
-        },
-        {
-            new: true
-        }
-    )
+const logOut = async (req, res) => {
 
+  try {
+
+    logger.debug(`Logout attempt for user: ${req.user.emailId} (ID: ${req.user._id})`);
+
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $unset: {
+          refreshToken: 1 
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+  
     const options = {
-        httpOnly: true,
-        secure: true
-    }
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production'
+    };
+
+
+    logger.info(`User logged out successfully: ${req.user.emailId} (ID: ${req.user._id})`);
+
 
     return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json('logout Succesfully')
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json({ success: true, message: "Logout successful" });
 
-}
+  } catch (error) {
+
+    const userId = req.user ? req.user._id : 'UNKNOWN';
+    logger.error(`Error during logout for user ID ${userId}: ${error.message}`, {
+      stack: error.stack
+    });
+
+
+    return res.status(500).json({
+      success: false,
+      message: "An internal server error occurred."
+    });
+  }
+};
 
 
 const refreshAccessToken = async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingRefreshToken) {
+    logger.warn("Refresh token failed: No token provided.");
     return res.status(401).json({ error: "Unauthorized request" });
   }
+
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+  };
 
   try {
     const decodedToken = jwt.verify(
@@ -160,62 +281,111 @@ const refreshAccessToken = async (req, res) => {
     const user = await User.findById(decodedToken?._id);
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid refresh token" });
+ 
+      logger.warn(`Refresh token failed: User not found for token ID ${decodedToken?._id}`);
+      return res.status(401).json({ success: false, message: "Invalid refresh token" });
     }
 
-    if (incomingRefreshToken !== user?.refreshToken) {
-        user.refreshToken = undefined;
-           await user.save({ validateBeforeSave: false });
-         return res.status(403).json({ error: "Forbidden. Token reuse detected." });
+if (incomingRefreshToken !== user?.refreshToken) {
+   
+      user.refreshToken = undefined;
+      await user.save({ validateBeforeSave: false });
+      
+      logger.error(`FORBIDDEN (Token Reuse): Stolen refresh token detected for user ${user.emailId} (ID: ${user._id}). Session revoked.`);
+      
+      res.clearCookie("accessToken", options);
+      res.clearCookie("refreshToken", options);
+      return res.status(403).json({ success: false, message: "Forbidden. Session compromised." });
     }
 
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
+
 
    
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefereshTokens(user._id);
+
+     user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+ 
+    logger.info(`Access token refreshed for user: ${user.emailId} (ID: ${user._id})`);
 
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
       .cookie("refreshToken", newRefreshToken, options)
       .json({
+        success: true,
         message: "Access token refreshed",
         accessToken,
       });
   } catch (error) {
-      res.clearCookie("refreshToken", { httpOnly: true, secure: true });
-    return res.status(401).json({ error: error.message });
+ logger.warn(`Refresh token failed: ${error.message}.`);
+    
+ 
+    res.clearCookie("accessToken", options);
+    res.clearCookie("refreshToken", options);
+    
+ 
+    return res.status(401).json({ success: false, message: "Invalid or expired token." });
   }
 };
-const changePassword=async(req,res)=>{
+
+const changePassword = async (req, res) => {
+
+  const userId = req.user._id;
+  const userEmail = req.user.emailId;
+
   try {
-   const {oldPassword,newPassword}=req.body;
-   
-   if(!oldPassword || !newPassword){
-    throw new Error('oldPassword or newPassword is not valid'); 
-  }
-  const user=req.user;
-   const isPasswordValid=await user.verifyPassword(oldPassword);
-   
-   if(!isPasswordValid){
-   throw new Error('oldPassword is not valid'); 
-  }
+    const { oldPassword, newPassword } = req.body;
 
-  user.password=await bcrypt.hash(newPassword,10);
-
-  await user.save();
-   
   
-  return res.status(200).json({message:'password changed successfully',data:user});
-  } catch (error) {
-    return res.status(400).json("ERROR : "+error.message);
-  }
+    if (!oldPassword || !newPassword) {
+      logger.warn(`Change password failed: Missing fields for user ${userEmail} (ID: ${userId})`);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Both oldPassword and newPassword are required.' 
+      });
+    }
 
-}
+   
+    const user = req.user; 
+    const isPasswordValid = await user.verifyPassword(oldPassword);
+
+    if (!isPasswordValid) {
+    
+      logger.warn(`Change password failed: Invalid old password for user ${userEmail} (ID: ${userId})`);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'The old password you entered is incorrect.' 
+      });
+    }
+
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+
+    logger.info(`Password changed successfully for user ${userEmail} (ID: ${userId})`);
+
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Password changed successfully' 
+    });
+
+  } catch (error) {
+  
+    logger.error(`Unhandled error in changePassword for user ${userEmail} (ID: ${userId}): ${error.message}`, {
+      stack: error.stack
+    });
+
+    return res.status(500).json({ 
+      success: false,
+      message: "An internal server error occurred. Please try again later."
+    });
+  }
+};
 
 
 const generateAgoraToken=async(req,res)=>{

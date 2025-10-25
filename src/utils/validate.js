@@ -21,6 +21,17 @@ const signUpSchema = z.object({
 });
 
 
+const loginSchema=z.object({
+   emailId: z.string().email("EmailId is not valid"),
+     password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
+})
+
+
 const editProfileSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters").optional(),
   lastName: z.string().min(1, "Last name is required").optional(),
@@ -83,6 +94,22 @@ const validatesignUpData = (data) => {
   }
 };
 
+const validateloginData=(data)=>{
+    const result=loginSchema.safeParse(data);
+      if (result.success) {
+    return {
+      success: true,
+      data: result.data, 
+    };
+  } else {
+    return {
+      success: false,
+     
+      errors: result.error.flatten().fieldErrors, 
+    };
+  }
+}
+
 const validateProfileData = (data) => {
   const result = editProfileSchema.safeParse(data);
   if (result.success) {
@@ -99,4 +126,4 @@ const validateProfileData = (data) => {
   }
 };
 
-module.exports = { validatesignUpData, validateProfileData, editProfileSchema, signUpSchema }; 
+module.exports = { validatesignUpData, validateProfileData, editProfileSchema, signUpSchema ,validateloginData}; 
