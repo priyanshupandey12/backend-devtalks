@@ -17,7 +17,11 @@ const signUpSchema = z.object({
   ),
   gender: z.enum(['Male', 'Female', 'Other'], 
     { errorMap: () => ({ message: "Please select a gender" }) }
-  )
+  ),
+  yearsOfExperience: z.coerce
+    .number({ invalid_type_error: "Years must be a number" })
+    .min(0, "Years of experience cannot be negative")
+    .optional(),
 });
 
 

@@ -28,7 +28,7 @@ const userAuth=async(req,res,next)=>{
      }
      req.user=user;
 
-     logger.debug(`User authenticated: ${user.email} (ID: ${user._id})`);
+     logger.debug(`User authenticated: ${user.emailId} (ID: ${user._id})`);
     next();
   } catch (error) {
 

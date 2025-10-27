@@ -57,6 +57,7 @@ const signUp = async (req, res) => {
       password,
       gender,
       educationYear,
+      yearsOfExperience
     } = validationResult.data; 
 
   
@@ -69,6 +70,7 @@ const signUp = async (req, res) => {
       password: passwordhash,
       gender: gender || "",
       educationYear,
+      yearsOfExperience: yearsOfExperience || 0,
       authProvider: 'local',
     });
 
@@ -172,14 +174,26 @@ const loginUp=async(req,res)=>{
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
     
   
-    const loggedInUser = {
-      _id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      emailId: user.emailId,
-      photoUrl: user.photoUrl,
-      role: user.role
-    }; 
+const loggedInUser = {
+  _id: user._id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  emailId: user.emailId,
+  photoUrl: user.photoUrl,
+  role: user.role,
+  userRole: user.userRole,
+  experienceLevel: user.experienceLevel,
+  skills: user.skills,
+  gender:user.gender,
+  educationYear: user.educationYear,
+  collegeName: user.collegeName,
+  fieldOfStudy: user.fieldOfStudy,
+  primaryGoal: user.primaryGoal,
+  links: user.links,
+  description: user.description,
+  rating: user.rating,
+  verified: user.verified
+}; 
 
     const options = {
       httpOnly: true,

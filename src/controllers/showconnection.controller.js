@@ -2,38 +2,53 @@
 const Connection = require('../models/connection.model');
 const User = require('../models/user.model');
 const mongoose = require('mongoose');
+const logger=require('../utils/logger')
 
 const showpendingConnection = async (req, res) => {
-   
+    const loggedInUser = req.user;
+  logger.debug(`Fetching pending connections for user: ${loggedInUser.emailId} (ID: ${loggedInUser._id})`);
 
   try {
-    const loggedInUser = req.user;
-
 
     const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl','skills','experienceLevel','primaryGoal','lastLogin','location.address','educationYear','yearsOfExperience','userRole']);
 
- 
+ logger.debug(`Found ${pendingConnections.length} pending connections for user ${loggedInUser._id}.`);
 
     return res.status(200).json({
      message: 'pending connections',
      data: pendingConnections
     });
     } catch (error) {
-      return res.status(400).json({ error: error.message });
+   logger.error(`Error fetching pending connections for user ${loggedInUser._id}: ${error.message}`, {
+      stack: error.stack,
+      userId: loggedInUser._id
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: 'An internal server error occurred.'
+    });
+  
   }
 }
 
 
 const acceptingConnection = async (req, res) => {
+      const loggedInUser = req.user;
+      logger.debug(
+    `Fetching accepted connections for user: ${loggedInUser?._id}`, 
+    { query: req.query }
+  );
   try {
       const { lastActive, skills, sort = 'firstName', order = 'asc', page = 1, limit = 10,searchName } = req.query;
     const pageNum=Math.max(parseInt(page) ,1)
     const limitNum=Math.min(parseInt(limit) ,10)
     const skip=(pageNum-1)*limitNum
-    const loggedInUser = req.user;
+
 
     if (!loggedInUser || !loggedInUser._id) {
-      return res.status(400).json({ error: "Invalid user data" });
+     logger.warn('acceptingConnection called without a valid req.user object.');
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
    
@@ -73,6 +88,10 @@ const acceptingConnection = async (req, res) => {
  const sortCondition = {};
     sortCondition[sort] = order === 'asc' ? 1 : -1;
 
+    logger.debug(
+      `Executing User.find for ${loggedInUser._id} with filter:`, 
+      { filter: JSON.stringify(filter), sort: sortCondition }
+    );
 
     const connectedUsers = await User.find(filter)
       .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin yearsOfExperience educationYear')
@@ -83,7 +102,7 @@ const acceptingConnection = async (req, res) => {
     const total = await User.countDocuments(filter);
 
     return res.status(200).json({
-      message: 'Connected users',
+      message: 'Connected users fetched successfully',
       total,
       page: pageNum,
       limit: limitNum,
@@ -91,8 +110,16 @@ const acceptingConnection = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error in acceptingConnection:', error);
-    return res.status(500).json({ error: 'An unexpected error occurred' });
+  logger.error(`Error in acceptingConnection for user ${loggedInUser?._id}: ${error.message}`, {
+      stack: error.stack,
+      userId: loggedInUser?._id,
+      query: req.query
+    });
+    
+    return res.status(500).json({ 
+      success: false, 
+      message: 'An internal server error occurred.' 
+    });
   } 
 }
 
@@ -100,8 +127,12 @@ const acceptingConnection = async (req, res) => {
 
 
 const choosingCardConnection = async (req, res) => {
+    const currentUserId = req.user._id;
+    logger.debug(`User ${currentUserId} fetching connection feed.`, { 
+        query: req.query 
+    });
     try {
-        const currentUserId = req.user._id;
+      
 
      
         const {
@@ -121,6 +152,7 @@ const choosingCardConnection = async (req, res) => {
 
         const currentUser = await User.findById(currentUserId).lean(); 
         if (!currentUser) {
+            logger.warn(`User not found in choosingCardConnection: ${currentUserId}`);
             return res.status(404).json({ success: false, message: "Current user not found" });
         }
 
@@ -134,7 +166,7 @@ const choosingCardConnection = async (req, res) => {
             excludeUserIds.add(req.fromuserId.toString());
             excludeUserIds.add(req.toconnectionId.toString());
         });
-
+        logger.debug(`Excluding ${excludeUserIds.size} users for feed of ${currentUserId}.`);
           const excludeObjectIds = Array.from(excludeUserIds).map(id => new mongoose.Types.ObjectId(id));
       
         let filterQuery = {
@@ -177,7 +209,10 @@ const choosingCardConnection = async (req, res) => {
             }
         }
         
-     
+     logger.debug(`Final filter query for ${currentUserId}:`, {
+            filter: JSON.stringify(filterQuery)
+        });
+
         const feedFields = {
              _id: 1, firstName: 1, lastName: 1, photoUrl: 1, skills: 1,
              description: 1, experienceLevel: 1, primaryGoal: 1,
@@ -195,7 +230,7 @@ const choosingCardConnection = async (req, res) => {
         const hasLocationFilter = useAdvancedFilters && currentUser.location?.coordinates?.length && radiusKm > 0;
 
         if (hasLocationFilter) {
-           
+           logger.debug(`Using geoNear aggregation for user ${currentUserId}.`);
             const geoAggregation = [
                 {
                     $geoNear: {
@@ -228,7 +263,7 @@ const choosingCardConnection = async (req, res) => {
             totalCount = result[0].metadata[0]?.total || 0;
 
         } else {
-          
+          logger.debug(`Using standard find query for user ${currentUserId}.`);
             users = await User.find(filterQuery)
                 .select(Object.keys(feedFields).join(' '))
                 .skip(skip)
@@ -236,7 +271,7 @@ const choosingCardConnection = async (req, res) => {
                 .lean();
             totalCount = await User.countDocuments(filterQuery);
         }
-
+logger.info(`Successfully fetched connection feed for ${currentUserId}. Found ${totalCount} users.`);
      
         const totalPages = Math.ceil(totalCount / limitNum);
         const pagination = {
@@ -265,7 +300,12 @@ const choosingCardConnection = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error in choosingCardConnection:", error);
+      logger.error(`Error in choosingCardConnection for user ${currentUserId}: ${error.message}`, {
+            stack: error.stack,
+            userId: currentUserId,
+            query: req.query
+        });
+
         res.status(500).json({
             success: false,
             message: "Internal server error",
