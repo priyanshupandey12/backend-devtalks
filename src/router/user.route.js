@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/auth/google/callback',
   passport.authenticate('google', { 
-    failureRedirect: `${process.env.FRONTEND_URL}/login`, 
+    failureRedirect: `${process.env.liveFrontendURL}/login`, 
     session: false 
   }),
   async (req, res) => {
@@ -44,10 +44,10 @@ router.get(
       return res
         .cookie('accessToken', accessToken, { ...options, maxAge: 15 * 60 * 1000 }) 
         .cookie('refreshToken', refreshToken, { ...options, maxAge: 7 * 24 * 60 * 60 * 1000 }) 
-        .redirect(`${process.env.FRONTEND_URL}/feed`);
+        .redirect(`${process.env.liveFrontendURL}/feed`);
     } catch (err) {
       console.error('Google Auth Error:', err);
-      res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+      res.redirect(`${process.env.liveFrontendURL}/login?error=oauth_failed`);
     }
   }
 );
