@@ -9,13 +9,16 @@ const gethashSocket=(loggedin,userId)=>{
    return crypto.createHash("sha256").update([loggedin,userId].sort().join("_")).digest("hex")
 }
 
-
+const allowedSocketOrigins = [
+  process.env.liveFrontendURL,
+  process.env.localFrontendURL
+];
 
 const intiliazeSocket=(server)=>{
     logger.info("Socket.io service initializing...");
   const io=socket(server,{
     cors:{
-      origin:process.env.FRONTEND_URL,
+      origin:allowedSocketOrigins,
        credentials: true 
     }
   })
