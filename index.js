@@ -59,6 +59,7 @@ const limiter = ratelimit({
 });
 
 app.use(limiter)
+app.set('trust proxy', 1);
 
 const userRouter=require('./src/router/user.route');
 const profileRouter=require('./src/router/profile.router');
