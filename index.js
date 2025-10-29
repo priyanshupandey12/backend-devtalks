@@ -13,12 +13,27 @@ const ratelimit=require('express-rate-limit')
 const logger=require('./src/utils/logger')
 
 const passport = require('./src/utils/passport-config');
-app.use(cors
-  ({
-    origin:process.env.FRONTEND_URL,
-    credentials:true
-  }
-));
+const allowedOrigins = [
+  process.env.liveFrontendURL,
+  process.env.localFrontendURL
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    
+  
+    if (!origin) return callback(null, true);
+
+ 
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false); 
+    }
+    
+    return callback(null, true); 
+  },
+  credentials: true
+}));
 
 app.use(passport.initialize());
 app.use(express.json());

@@ -50,10 +50,10 @@ const editProfileSchema = z.object({
   location: z.string().optional(), 
   timezone: z.string().optional(),
   primaryGoal: z.enum([
-    'Build a Startup', 'Portfolio Project', 'Learn a New Skill', 
-    'Hackathon', 'Just for Fun', 'Learning', 'Building Projects', 
-    'Networking', 'Job Search', 'Project Partner', 'Learning Partner',
-    'Mentor', 'Mentee', 'Internship', 'Job', 'Freelance Collaboration'
+     'Find Teammates for a Project', 
+      'Find a Job or Internship',     
+      'Find a Mentor or Partner to Learn', 
+      'Network and Explore',
   ]).optional(),
   userRole: z.enum([
     'Designer', 'Student', 'Frontend Developer', 'Backend Developer', 

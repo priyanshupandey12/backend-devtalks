@@ -80,17 +80,13 @@ fieldOfStudy: String,
 
   primaryGoal: {
     type: String,
-    enum: ['Build a Startup', 
-      'Portfolio Project', 
-      'Learn a New Skill', 
-      'Hackathon', 'Just for Fun','Learning', 'Building Projects', 'Hackathon', 'Networking', 'Job Search',    'Project Partner',
-    'Learning Partner',
-    'Mentor',
-    'Mentee',
-    'Internship',
-    'Job',
-    'Freelance Collaboration',],
-  default: 'Learn a New Skill'
+    enum: [
+      'Find Teammates for a Project', 
+      'Find a Job or Internship',     
+      'Find a Mentor or Partner to Learn', 
+      'Network and Explore',
+  ],
+  default: 'Network and Explore'
   },
   userRole: {
     type: String,
@@ -103,13 +99,9 @@ fieldOfStudy: String,
      'Data Analyst',
     'DevOps Engineer',
     'Other',],
-   default: 'Student'
+   default: 'Other'
   },
 
-  experienceLevel: {
-  type: String,
-  enum: ['Beginner', 'Intermediate', 'Advanced'],
-},
 yearsOfExperience: {
   type: Number,
   default: 0,

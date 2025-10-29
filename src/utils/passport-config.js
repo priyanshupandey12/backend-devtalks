@@ -11,7 +11,7 @@ passport.use(new GoogleStrategy({
 },
 async(accessToken, refreshToken, profile, done) => {
            try {
-            logger.debug(`Google OAuth: Processing user profile. ID: ${profile.id}, Email: ${userEmail}`);
+            logger.debug(`Google OAuth: Processing user profile. ID: ${profile.id}`);
                 let user = await User.findOne({
           $or: [
             { googleId: profile.id },
