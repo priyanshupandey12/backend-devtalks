@@ -70,6 +70,22 @@ const chatRouter=require('./src/router/chat.router')
 const paymentRouter=require('./src/router/payment.router')
 const intiliazeSocket=require('./src/utils/socket')
 const { connectRedis } = require('./src/utils/redis');
+
+app.get('/api/v1/health', async (req, res) => {
+  try {
+    res.status(200).json({
+      status: 'OK',
+      message: 'DevTalks server is healthy 🚀',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error.message,
+    });
+  }
+});
 app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
 app.use('/api/v1/connection',connectionRouter);
