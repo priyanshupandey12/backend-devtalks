@@ -87,7 +87,7 @@ Ensure you have the following installed:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/priyanshupandey12/frontend-devtalks
+git clone https://github.com/priyanshupandey12/backend-devtalks
 cd frontend-devtalks
 ```
 
