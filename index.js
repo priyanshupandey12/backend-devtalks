@@ -101,16 +101,17 @@ intiliazeSocket(server)
 
 logger.info("Application starting up...");
 
-
+const PORT = process.env.PORT || 7777;
 
 connectDB().then(async ()=>{
  logger.debug("Database connection successful.");
   await connectRedis();
   logger.info("Redis connection successful.");
    startGithubActivityCron();
-  server.listen(7777,()=>{
-  logger.info('Server is running on port 7777');
-  })
+
+server.listen(PORT, () => {
+  logger.info(`Server is running on port ${PORT}`);
+});
 }).catch((err)=>{
   logger.error('Failed to connect to the database', err); 
   process.exit(1)
