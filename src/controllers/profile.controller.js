@@ -65,20 +65,38 @@ if (!validationResult.success) {
         details: validationResult.errors,
       });
     }
-    const imageLocalFilePath=req.file?.path;
+      const file = req.file; 
+    const oldImageUrl = loggedInUser.photoUrl;
 
+  
+    if (file) {
+   
+      const response = await uploadOnCloudinary(file); 
 
-    const isImageExist=loggedInUser.photoUrl;
-      if(isImageExist!=="") {
-          await deleteFromCloudinary(getPublicIdFromUrl(isImageExist))
+  
+      if (response && response.secure_url) {
+    
+        loggedInUser.photoUrl = response.secure_url; 
+
+ 
+        if (oldImageUrl && oldImageUrl !== "") {
+          try {
+            const publicId = getPublicIdFromUrl(oldImageUrl); 
+            if (publicId) {
+              await deleteFromCloudinary(publicId);
+              logger.debug(`Successfully deleted old image: ${publicId}`);
+            }
+          } catch (deleteError) {
+        
+            logger.warn(`Failed to delete old image ${oldImageUrl} from Cloudinary`, deleteError);
+          }
+        }
+      } else {
+       
+        logger.error(`Cloudinary upload failed for user ${loggedInUser._id}`);
+        return res.status(500).json({ success: false, message: "Error uploading new image." });
       }
-
-      let updatedImage=isImageExist
-      if(imageLocalFilePath) {
-      const response= await uploadOnCloudinary(imageLocalFilePath);
-       updatedImage=response.url;
-         loggedInUser.photoUrl = updatedImage;
-      }
+    }
 
    
 if (req.body.location && typeof req.body.location === 'string' && req.body.location.trim() !== '') {

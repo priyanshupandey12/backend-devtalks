@@ -8,26 +8,30 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET 
 });
 
-const uploadOnCloudinary = async (localFilePath) => {
-    try {
-        if (!localFilePath){
-          logger.debug("Cloudinary upload skipped: localFilePath is null or undefined.");
-          return null
-        } 
-    
-        const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type: "image"
-        })
-     
-     logger.debug(`File uploaded to Cloudinary successfully. URL: ${response.secure_url}`);
-        fs.unlinkSync(localFilePath)
-        return response;
-
-    } catch (error) {
-      logger.error(`Failed to upload file to Cloudinary. Path: ${localFilePath}`, error);
-        fs.unlinkSync(localFilePath) 
-        return null;
+const uploadOnCloudinary = async (file) => { 
+  try {
+    if (!file) {
+      logger.debug("Cloudinary upload skipped: file object is null or undefined.");
+      return null;
     }
+
+ 
+    const b64 = file.buffer.toString('base64');
+    let dataURI = `data:${file.mimetype};base64,${b64}`;
+
+    const response = await cloudinary.uploader.upload(dataURI, {
+      resource_type: "image" 
+    });
+
+    logger.debug(`File uploaded to Cloudinary successfully. URL: ${response.secure_url}`);
+   
+    return response;
+
+  } catch (error) {
+    logger.error(`Failed to upload file to Cloudinary.`, error);
+
+    return null;
+  }
 }
 
 
