@@ -194,21 +194,27 @@ const loggedInUser = {
   rating: user.rating,
   verified: user.verified
 }; 
+const accessTokenOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'none',
+  maxAge: 15 * 60 * 1000 
+};
 
-    const options = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ,
-      sameSite: 'none'
-    };
-    
- 
-    logger.info(`Login successful for ${emailId} (ID: ${user._id})`);
+const refreshTokenOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'none',
+  maxAge: 7 * 24 * 60 * 60 * 1000 
+};
 
-    return res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json({ user: loggedInUser });
+logger.info(`Login successful for ${emailId} (ID: ${user._id})`);
+
+return res
+  .status(200)
+  .cookie("accessToken", accessToken, accessTokenOptions)
+  .cookie("refreshToken", refreshToken, refreshTokenOptions)
+  .json({ user: loggedInUser });
   } catch (error) {
    logger.error(`Unhandled error in login for ${emailId}: ${error.message}`, {
       stack: error.stack
