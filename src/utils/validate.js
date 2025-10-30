@@ -3,8 +3,8 @@ const { z } = require("zod");
 
 const signUpSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters"), 
-  lastName: z.string().min(1, "Last name is required"),
-  emailId: z.string().email("EmailId is not valid"),
+  lastName: z.string().min(1, "Last name cannot be empty."),
+  emailId: z.string().email("Hmm, that doesn’t look like a valid email."),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -13,20 +13,20 @@ const signUpSchema = z.object({
     .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
   educationYear: z.enum(
     ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate'], 
-    { errorMap: () => ({ message: "Please select a valid education year" }) }
+    { errorMap: () => ({ message: "Please select your current education year." }) }
   ),
   gender: z.enum(['Male', 'Female', 'Other'], 
     { errorMap: () => ({ message: "Please select a gender" }) }
   ),
   yearsOfExperience: z.coerce
-    .number({ invalid_type_error: "Years must be a number" })
+    .number({ invalid_type_error: "Please enter your years of experience as a number." })
     .min(0, "Years of experience cannot be negative")
     .optional(),
 });
 
 
 const loginSchema=z.object({
-   emailId: z.string().email("EmailId is not valid"),
+   emailId: z.string().email("Please enter a valid email address."),
      password: z.string()
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")

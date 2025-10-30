@@ -60,6 +60,14 @@ const signUp = async (req, res) => {
       yearsOfExperience
     } = validationResult.data; 
 
+      const existingUser = await User.findOne({ emailId });
+    if (existingUser) {
+      logger.warn(`Signup failed: Email already in use: ${emailId}`);
+      return res.status(409).json({
+        success: false,
+        message: "Looks like you already have an account with this email. Try logging in instead!",
+      });
+    }
   
     const passwordhash = await bcrypt.hash(password, 10);
 
@@ -88,17 +96,9 @@ const signUp = async (req, res) => {
 
     return res
       .status(201) 
-      .json({ message: "User created successfully", data: userWithoutPassword });
+      .json({ message: `Welcome aboard, ${firstName}! Your account was created successfully.`, data: userWithoutPassword });
 
   } catch (error) {
-
-    if (error.code === 11000) {
-      logger.warn(`Signup failed: Email already in use: ${req.body.emailId}`);
-      return res.status(409).json({ 
-        success: false,
-        message: "This email address is already registered."
-      });
-    }
 
   
     logger.error(`Unhandled error in user signup for ${req.body.emailId}: ${error.message}`, {
@@ -107,7 +107,7 @@ const signUp = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "An internal server error occurred. Please try again later."
+      message: "Oops! Something went wrong on our end. Please try again in a moment."
     });
   }
 };
@@ -137,34 +137,37 @@ const loginUp=async(req,res)=>{
 
     const user=await User.findOne({emailId:emailId });
 
-  
+    if (!user) {
+      logger.warn(`Login failed: User not found for ${emailId}`);
+      return res.status(401).json({
+        success: false,
+        message: "We couldn’t find an account with that email. Try signing up first.",
+      });
+    }
 
      if (user.lockUntil && user.lockUntil > Date.now()) {
    logger.warn(`Login failed: Account locked for ${emailId}`);
       return res.status(403).json({ 
         success: false, 
-        message: 'Account locked. Please try again later.' 
+        message: 'Your account is temporarily locked due to too many failed attempts. Please try again later.' 
       });
        }
 
    const isPasswordValid = user ? await user.verifyPassword(password) : false;
 
-    if (!user || !isPasswordValid) {
-      if (user) {
+   if (!isPasswordValid) {
+      await user.incLoginAttempts();
+      logger.warn(`Invalid password for ${emailId}. Attempt ${user.loginAttempts}`);
 
-        await user.incLoginAttempts();
-        logger.warn(`Login failed: Invalid password for ${emailId}. Attempt ${user.loginAttempts}`);
-      } else {
-       
-        logger.warn(`Login failed: User not found for ${emailId}`);
-      }
-      
-
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid email or password.' 
+      return res.status(401).json({
+        success: false,
+        message: "That password doesn’t seem right. Double-check and try again.",
       });
     }
+
+    await user.resetLoginAttempts();
+    user.lastLogin = new Date();
+    await user.save();
 
  
     await user.resetLoginAttempts();
@@ -191,8 +194,6 @@ const loggedInUser = {
   primaryGoal: user.primaryGoal,
   links: user.links,
   description: user.description,
-  rating: user.rating,
-  verified: user.verified
 }; 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -216,7 +217,7 @@ return res
   .status(200)
   .cookie("accessToken", accessToken, accessTokenOptions)
   .cookie("refreshToken", refreshToken, refreshTokenOptions)
-  .json({ user: loggedInUser });
+  .json({ message: `Welcome back, ${user.firstName}!`, user: loggedInUser });
   } catch (error) {
    logger.error(`Unhandled error in login for ${emailId}: ${error.message}`, {
       stack: error.stack
