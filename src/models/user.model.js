@@ -18,7 +18,7 @@ index: true,
   },
   lastName:{
     type:String,
-    required:true
+     default: ""
   },
   emailId:{
     type:String,
