@@ -68,6 +68,7 @@ const pendingrequestRouter=require('./src/router/showconnection.router');
 const projectRouter=require('./src/router/project.router');
 const chatRouter=require('./src/router/chat.router')
 const paymentRouter=require('./src/router/payment.router')
+const ossRoutes = require('./src/router/oss.router');
 const intiliazeSocket=require('./src/utils/socket')
 const { connectRedis } = require('./src/utils/redis');
 
@@ -93,7 +94,7 @@ app.use('/api/v1/pending',pendingrequestRouter);
 app.use('/api/v1/project',projectRouter);
 app.use('/api/v1/chats',chatRouter)
 app.use('/api/v1/payment',paymentRouter)
-
+app.use('/api/v1/oss', ossRoutes);
 
 const server=http.createServer(app)
 intiliazeSocket(server)
