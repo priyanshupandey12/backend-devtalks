@@ -50,7 +50,17 @@ const editProfile = async (req, res) => {
   try {
   
     if (req.body.links && typeof req.body.links === 'string') {
-      req.body.links = JSON.parse(req.body.links);
+      try {
+        req.body.links = JSON.parse(req.body.links);
+      } catch (e) {
+        req.body.links = {};
+      }
+    }
+    if (req.body['skills[]']) {
+      req.body.skills = Array.isArray(req.body['skills[]']) ? req.body['skills[]'] : [req.body['skills[]']];
+      delete req.body['skills[]'];
+    } else if (typeof req.body.skills === 'string') {
+      req.body.skills = req.body.skills.split(',').map(s => s.trim()).filter(Boolean);
     }
      const validationResult = validateProfileData(req.body);
 
@@ -99,41 +109,50 @@ if (!validationResult.success) {
     }
 
    
-if (req.body.location && typeof req.body.location === 'string' && req.body.location.trim() !== '') {
-    
-
-    const coordinates = await geocodeAddress(req.body.location);
-
-
-    if (coordinates && coordinates.length === 2) {
-
-        const [lng, lat] = coordinates;
-        loggedInUser.location = {
-            type: 'Point',
-            coordinates: [lng, lat],
-            address: req.body.location,
-        };
-       
-        delete req.body.location;
-    } else {
-     
-        logger.error(`Geocoding API error for user ${loggedInUser._id}: ${geocodeError.message}`);
-     
+    if (req.body.location !== undefined) {
+      const locAddress = typeof req.body.location === 'string' ? req.body.location.trim() : '';
+      let coords = loggedInUser.location?.coordinates || [0, 0];
+      if (locAddress) {
+        try {
+          const geocoded = await geocodeAddress(locAddress);
+          if (geocoded && geocoded.length === 2) {
+            coords = geocoded;
+          }
+        } catch (geocodeError) {
+          logger.warn(`Geocoding API error for user ${loggedInUser._id}: ${geocodeError.message}`);
+        }
+      }
+      loggedInUser.location = {
+        type: 'Point',
+        coordinates: coords,
+        address: locAddress,
+      };
+      delete req.body.location;
     }
 
-}
-
-    const enumFields = ['primaryGoal', 'userRole','location'];
-enumFields.forEach(field => {
-  if (req.body[field] === "") req.body[field] = undefined;
-});
+    const enumFields = ['primaryGoal', 'userRole', 'gender', 'experienceLevel', 'educationYear'];
+    enumFields.forEach(field => {
+      if (req.body[field] === "") {
+        req.body[field] = undefined;
+      }
+    });
 
     Object.keys(req.body).forEach(key => {
-      loggedInUser[key] = req.body[key];
+      if (req.body[key] !== undefined) {
+        loggedInUser[key] = req.body[key];
+      }
     });
 
     await loggedInUser.save();
     logger.info(`Profile updated successfully for user ${loggedInUser.emailId} (ID: ${loggedInUser._id})`);
+
+    // Trigger GitHub activity sync in background if username exists
+    if (loggedInUser.links?.githubUsername) {
+      const { syncUserGithubActivity } = require('../utils/githubcron');
+      syncUserGithubActivity(loggedInUser).catch(err => {
+        logger.error(`Error background syncing GitHub for user ${loggedInUser._id}: ${err.message}`);
+      });
+    }
 
      const userToReturn = loggedInUser.toObject();
     delete userToReturn.password;

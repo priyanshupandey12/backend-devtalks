@@ -18,18 +18,14 @@ const allowedOrigins = [
   process.env.localFrontendURL
 ];
 
+app.set('trust proxy', 1);
+
 app.use(cors({
   origin: function (origin, callback) {
-    
-  
     if (!origin) return callback(null, true);
-
- 
     if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false); 
+      return callback(null, false); 
     }
-    
     return callback(null, true); 
   },
   credentials: true
@@ -38,7 +34,9 @@ app.use(cors({
 app.use(passport.initialize());
 app.use(express.json());
 app.use(mongoSanitize());
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 const morganStream = {
   write: (message) => {
     logger.http(message.trim());
@@ -49,7 +47,7 @@ app.use(cookieParser());
 
 const limiter = ratelimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100, 
+  max: 500, 
   message: {
     status: 429,
     message: "Too many requests, please try again later."
@@ -58,16 +56,13 @@ const limiter = ratelimit({
   legacyHeaders: false, 
 });
 
-app.use(limiter)
-app.set('trust proxy', 1);
+app.use(limiter);
 
 const userRouter=require('./src/router/user.route');
 const profileRouter=require('./src/router/profile.router');
 const connectionRouter=require('./src/router/connection.router');
 const pendingrequestRouter=require('./src/router/showconnection.router');
-const projectRouter=require('./src/router/project.router');
 const chatRouter=require('./src/router/chat.router')
-const paymentRouter=require('./src/router/payment.router')
 const ossRoutes = require('./src/router/oss.router');
 const intiliazeSocket=require('./src/utils/socket')
 const { connectRedis } = require('./src/utils/redis');
@@ -91,10 +86,16 @@ app.use('/api/v1/users',userRouter);
 app.use('/api/v1/profile',profileRouter);
 app.use('/api/v1/connection',connectionRouter);
 app.use('/api/v1/pending',pendingrequestRouter);
-app.use('/api/v1/project',projectRouter);
 app.use('/api/v1/chats',chatRouter)
-app.use('/api/v1/payment',paymentRouter)
 app.use('/api/v1/oss', ossRoutes);
+
+app.use((err, req, res, next) => {
+  logger.error(`Unhandled Express Error: ${err.message}`, { stack: err.stack });
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "An unexpected internal server error occurred."
+  });
+});
 
 const server=http.createServer(app)
 intiliazeSocket(server)
@@ -105,14 +106,17 @@ logger.info("Application starting up...");
 const PORT = process.env.PORT || 7777;
 
 connectDB().then(async ()=>{
- logger.debug("Database connection successful.");
-  await connectRedis();
-  logger.info("Redis connection successful.");
-   startGithubActivityCron();
+  logger.info("Database connection successful.");
+  try {
+    await connectRedis();
+  } catch (err) {
+    logger.warn("Redis startup notice: using in-memory store fallback.");
+  }
+  startGithubActivityCron();
 
-server.listen(PORT, () => {
-  logger.info(`Server is running on port ${PORT}`);
-});
+  server.listen(PORT, () => {
+    logger.info(`Server is running on port ${PORT}`);
+  });
 }).catch((err)=>{
   logger.error('Failed to connect to the database', err); 
   process.exit(1)

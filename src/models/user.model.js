@@ -161,7 +161,7 @@ refreshToken: {
 
 },{timestamps:true});
 
-userSchema.index({ email: 1 });
+userSchema.index({ emailId: 1 });
 userSchema.index({ firstName: 1 });
 userSchema.index({ lastLogin: -1 });
 userSchema.index({ "location.coordinates": "2dsphere" });

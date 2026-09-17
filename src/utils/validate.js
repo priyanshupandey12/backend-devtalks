@@ -25,24 +25,19 @@ const signUpSchema = z.object({
 });
 
 
-const loginSchema=z.object({
-   emailId: z.string().email("Please enter a valid email address."),
-     password: z.string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character")
-})
+const loginSchema = z.object({
+  emailId: z.string().email("Please enter a valid email address."),
+  password: z.string().min(1, "Password is required.")
+});
 
 
 const editProfileSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters").optional(),
-  lastName: z.string().min(1, "Last name is required").optional(),
-  gender: z.enum(["Male", "Female", "Other"]).optional(),
+  lastName: z.string().optional(),
+  gender: z.enum(["Male", "Female", "Other", ""]).optional(),
   description: z.string().optional(),
-  experienceLevel: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional(),
-  educationYear: z.enum(['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate']).optional(),
+  experienceLevel: z.enum(['Student', 'Beginner', 'Intermediate', 'Senior', '']).optional(),
+  educationYear: z.enum(['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate', '']).optional(),
   collegeName: z.string().optional(),
   fieldOfStudy: z.string().optional(),
   skills: z.array(z.string()).optional(),
@@ -54,30 +49,19 @@ const editProfileSchema = z.object({
       'Find a Job or Internship',     
       'Find a Mentor or Partner to Learn', 
       'Network and Explore',
+      ''
   ]).optional(),
   userRole: z.enum([
     'Designer', 'Student', 'Frontend Developer', 'Backend Developer', 
     'Fullstack Developer', 'Data Scientist', 'Data Analyst', 
-    'DevOps Engineer', 'Other'
+    'DevOps Engineer', 'Other', ''
   ]).optional(),
   links: z.object({
     githubUsername: z.string().optional(),
-    linkedin: z.string().url("Must be a valid URL").or(z.literal('')).optional(),
-    portfolio: z.string().url("Must be a valid URL").or(z.literal('')).optional(),
+    linkedin: z.string().optional(),
+    portfolio: z.string().optional(),
   }).optional(),
-})
-.refine(data => {
-  if (data.educationYear === 'Graduate') {
-    return typeof data.yearsOfExperience === 'number' && data.yearsOfExperience >= 0;
-  }
-  return true;
-}, { message: "Years of experience is required for graduates.", path: ["yearsOfExperience"] })
-.refine(data => {
-  if (data.educationYear && data.educationYear !== 'Graduate') {
-    return data.yearsOfExperience === undefined || data.yearsOfExperience === 0;
-  }
-  return true;
-}, { message: "Cannot specify years of experience if not a graduate.", path: ["yearsOfExperience"] });
+});
 
 
 

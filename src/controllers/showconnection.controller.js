@@ -10,7 +10,7 @@ const showpendingConnection = async (req, res) => {
 
   try {
 
-    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl','skills','experienceLevel','primaryGoal','lastLogin','location.address','educationYear','yearsOfExperience','userRole']);
+    const pendingConnections = await Connection.find({ toconnectionId: loggedInUser._id, status: 'Interested' }).populate('fromuserId',['firstName','lastName','photoUrl','skills','experienceLevel','primaryGoal','lastLogin','location','educationYear','yearsOfExperience','userRole','isGithubActive7d','isGithubActive3m','githubActivity']);
 
  logger.debug(`Found ${pendingConnections.length} pending connections for user ${loggedInUser._id}.`);
 
@@ -42,7 +42,7 @@ const acceptingConnection = async (req, res) => {
   try {
       const { lastActive, skills, sort = 'firstName', order = 'asc', page = 1, limit = 10,searchName } = req.query;
     const pageNum=Math.max(parseInt(page) ,1)
-    const limitNum=Math.min(parseInt(limit) ,10)
+    const limitNum=Math.min(parseInt(limit) || 500, 1000)
     const skip=(pageNum-1)*limitNum
 
 
@@ -94,7 +94,7 @@ const acceptingConnection = async (req, res) => {
     );
 
     const connectedUsers = await User.find(filter)
-      .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin yearsOfExperience educationYear')
+      .select('firstName lastName photoUrl skills description primaryGoal userRole lastLogin yearsOfExperience educationYear location isGithubActive7d isGithubActive3m githubActivity')
       .sort(sortCondition)
       .skip(skip)
       .limit(limitNum);
@@ -146,7 +146,7 @@ const choosingCardConnection = async (req, res) => {
 
         const useAdvancedFilters = req.query.useAdvancedFilters === 'true';
         const pageNum = parseInt(req.query.page) || 1;
-        const limitNum = Math.min(parseInt(req.query.limit) || 10, 50); 
+        const limitNum = Math.min(parseInt(req.query.limit) || 500, 1000); 
         const radiusKm = parseInt(req.query.locationRadius) || 0;
         const skip = (pageNum - 1) * limitNum;
 

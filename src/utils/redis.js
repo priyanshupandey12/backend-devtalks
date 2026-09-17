@@ -1,54 +1,71 @@
-const {createClient}=require("redis")
+const { createClient } = require("redis");
 const logger = require('../utils/logger');
+
+const inMemoryStore = new Map();
+
 const client = createClient({
-  url:process.env.REDIS_URL
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > 3) {
+        return false; // Stop reconnecting after 3 attempts if Redis is down
+      }
+      return Math.min(retries * 500, 2000);
+    }
+  }
 });
 
-client.on('error', (err) => console.log('Redis Client Error', err));
+client.on('error', (err) => {
+  logger.warn(`Redis notice: ${err.message}`);
+});
 
- const connectRedis = async () => {
-if (!client.isOpen) {
+const connectRedis = async () => {
+  if (!client.isOpen) {
     try {
- 
       await client.connect();
- 
       logger.info('Successfully connected to Redis!');
     } catch (err) {
-      logger.error('Failed to connect to Redis', err);
-      process.exit(1); 
+      logger.warn(`Redis connection unavailable (${err.message}). Using in-memory fallback store.`);
     }
   }
 };
 
-
 const setUserOnline = async (userId, socketId) => {
   try {
- 
-    await client.set(`user:${userId}`, socketId);
-    logger.debug(`Set user ${userId} online in Redis`);
+    if (client.isOpen) {
+      await client.set(`user:${userId}`, socketId);
+    } else {
+      inMemoryStore.set(`user:${userId}`, socketId);
+    }
+    logger.debug(`Set user ${userId} online`);
   } catch (err) {
-    logger.error(`Failed to set user ${userId} online in Redis`, err);
+    inMemoryStore.set(`user:${userId}`, socketId);
   }
 };
 
 const setUserOffline = async (userId) => {
   try {
-   
-    await client.del(`user:${userId}`);
-    logger.debug(`Set user ${userId} offline in Redis`);
+    if (client.isOpen) {
+      await client.del(`user:${userId}`);
+    } else {
+      inMemoryStore.delete(`user:${userId}`);
+    }
+    logger.debug(`Set user ${userId} offline`);
   } catch (err) {
-    logger.error(`Failed to set user ${userId} offline in Redis`, err);
+    inMemoryStore.delete(`user:${userId}`);
   }
 };
 
 const getSocketIdForUser = async (userId) => {
   try {
-   
-    return await client.get(`user:${userId}`);
+    if (client.isOpen) {
+      return await client.get(`user:${userId}`);
+    } else {
+      return inMemoryStore.get(`user:${userId}`) || null;
+    }
   } catch (err) {
-    logger.error(`Failed to get socket ID for user ${userId} from Redis`, err);
-    return null; 
+    return inMemoryStore.get(`user:${userId}`) || null;
   }
 };
 
-module.exports={client,connectRedis,getSocketIdForUser,setUserOffline,setUserOnline}
+module.exports = { client, connectRedis, getSocketIdForUser, setUserOffline, setUserOnline };

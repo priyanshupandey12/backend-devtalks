@@ -35,8 +35,13 @@ logger.debug(`Connection request attempt from ${fromuserId} to ${toconnectionId}
     });
 
     if (existingConnection) {
-      logger.warn(`Connection already exists between ${fromuserId} and ${toconnectionId}.`);
-      return res.status(400).json({ error: 'Connection already exists' });
+      logger.info(`Updating existing connection between ${fromuserId} and ${toconnectionId} to status ${status}.`);
+      existingConnection.status = status;
+      await existingConnection.save();
+      return res.status(200).json({
+        message: `Request updated for ${toconnectionIdUser.firstName} ${toconnectionIdUser.lastName}`,
+        data: existingConnection
+      });
     }
 
     

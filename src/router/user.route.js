@@ -27,28 +27,35 @@ router.get(
     failureRedirect: `${process.env.liveFrontendURL}/login`, 
     session: false 
   }),
-  async (req, res) => {
+  (req, res) => {
+    const frontendUrl = process.env.NODE_ENV === 'production'
+      ? process.env.liveFrontendURL
+      : (process.env.localFrontendURL || 'http://localhost:5173');
+
     try {
       const accessToken = req.user.generateAccessToken();
       const refreshToken = req.user.generateRefreshToken();
 
       req.user.refreshToken = refreshToken;
-      await req.user.save({ validateBeforeSave: false });
+      req.user.save({ validateBeforeSave: false });
 
-    
+      const isProduction = process.env.NODE_ENV === 'production';
       const options = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-          sameSite: 'none'
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
       };
 
       return res
-        .cookie('accessToken', accessToken, { ...options, maxAge: 15 * 60 * 1000 }) 
-        .cookie('refreshToken', refreshToken, { ...options, maxAge: 7 * 24 * 60 * 60 * 1000 }) 
-        .redirect(`${process.env.liveFrontendURL}/feed`);
+        .cookie('accessToken', accessToken, { ...options, maxAge: 15 * 60 * 1000 })
+        .cookie('refreshToken', refreshToken, { ...options, maxAge: 7 * 24 * 60 * 60 * 1000 })
+        .redirect(`${frontendUrl}/feed`);
     } catch (err) {
       console.error('Google Auth Error:', err);
-      res.redirect(`${process.env.liveFrontendURL}/login?error=oauth_failed`);
+      const frontendUrl = process.env.NODE_ENV === 'production'
+        ? process.env.liveFrontendURL
+        : (process.env.localFrontendURL || 'http://localhost:5173');
+      res.redirect(`${frontendUrl}/login?error=oauth_failed`);
     }
   }
 );

@@ -169,11 +169,6 @@ const loginUp=async(req,res)=>{
     user.lastLogin = new Date();
     await user.save();
 
- 
-    await user.resetLoginAttempts();
-    user.lastLogin = new Date();
-    await user.save();
-
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
     
   

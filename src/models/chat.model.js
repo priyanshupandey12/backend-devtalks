@@ -20,7 +20,9 @@ const chatSchema=new mongoose.Schema({
     required:true
   }],
   messages:[messageSchema],
-},{timestamps:true})
+},{timestamps:true});
+
+chatSchema.index({ participants: 1 });
 
 const Chat=mongoose.model('Chat',chatSchema);
 
