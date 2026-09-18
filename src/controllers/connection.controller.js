@@ -7,24 +7,30 @@ const sendRequest = async (req, res) => {
   try {
     const fromuserId = req.user._id;
     const toconnectionId = req.params.toconnectionId;
-    const status = req.params.status;
+    let status = req.params.status;
     
-logger.debug(`Connection request attempt from ${fromuserId} to ${toconnectionId} with status ${status}`);
+    if (typeof status === 'string') {
+      const lower = status.toLowerCase();
+      if (lower === 'interested') status = 'Interested';
+      if (lower === 'ignored') status = 'ignored';
+    }
+
+    logger.debug(`Connection request attempt from ${fromuserId} to ${toconnectionId} with status ${status}`);
     const allowedStatus = ['ignored', 'Interested'];
     if (!allowedStatus.includes(status)) {
       logger.warn(`Invalid status provided by ${fromuserId}: ${status}`);
-      return res.status(400).json({ error: 'Invalid status' });
+      return res.status(400).json({ success: false, message: 'Invalid status', error: 'Invalid status' });
     }
 
     if (fromuserId.toString() === toconnectionId) {
       logger.warn(`User ${fromuserId} attempted to send connection request to themselves.`);
-      return res.status(400).json({ error: 'Cannot send request to yourself' });
+      return res.status(400).json({ success: false, message: 'Cannot send request to yourself', error: 'Cannot send request to yourself' });
     }
 
     const toconnectionIdUser = await User.findById(toconnectionId);
     if (!toconnectionIdUser) {
       logger.warn(`User ${fromuserId} tried to connect to non-existent user ${toconnectionId}`);
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found', error: 'User not found' });
     }
 
     const existingConnection = await Connection.findOne({
@@ -35,32 +41,48 @@ logger.debug(`Connection request attempt from ${fromuserId} to ${toconnectionId}
     });
 
     if (existingConnection) {
+      if (existingConnection.status === 'accepted') {
+        return res.status(400).json({
+          success: false,
+          message: `You are already connected with ${toconnectionIdUser.firstName}`,
+          error: `You are already connected with ${toconnectionIdUser.firstName}`
+        });
+      }
+
+      if (existingConnection.status === 'Interested') {
+        return res.status(400).json({
+          success: false,
+          message: `Connection request is already pending for ${toconnectionIdUser.firstName}`,
+          error: `Connection request is already pending`
+        });
+      }
+
       logger.info(`Updating existing connection between ${fromuserId} and ${toconnectionId} to status ${status}.`);
       existingConnection.status = status;
       await existingConnection.save();
       return res.status(200).json({
+        success: true,
         message: `Request updated for ${toconnectionIdUser.firstName} ${toconnectionIdUser.lastName}`,
         data: existingConnection
       });
     }
-
-    
 
     const newConnection = await Connection.create({ fromuserId, toconnectionId, status });
 
     logger.info(`Connection request sent successfully from ${fromuserId} to ${toconnectionId} (ID: ${newConnection._id})`);
 
     return res.status(200).json({
+      success: true,
       message: `Request sent to ${toconnectionIdUser.firstName} ${toconnectionIdUser.lastName}`,
       data: newConnection
     });
   } catch (error) {
-   logger.error(`Error in sendRequest from ${req.user?._id} to ${req.params?.toconnectionId}: ${error.message}`, {
+    logger.error(`Error in sendRequest from ${req.user?._id} to ${req.params?.toconnectionId}: ${error.message}`, {
       stack: error.stack,
       fromuserId: req.user?._id,
       toconnectionId: req.params?.toconnectionId
     });
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    return res.status(500).json({ success: false, message: 'Internal server error', error: 'Internal server error' });
   }
 }
 

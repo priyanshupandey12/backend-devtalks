@@ -40,6 +40,10 @@ const loginSchema = z.object({
 });
 
 
+const githubUsernameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
+const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/(in|pub|company)\/[a-zA-Z0-9_.-]+\/?$/i;
+const urlRegex = /^https?:\/\/[\w.-]+\.[a-zA-Z]{2,}(\/.*)?$/;
+
 const editProfileSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters").optional(),
   lastName: z.string().optional(),
@@ -63,7 +67,7 @@ const editProfileSchema = z.object({
   fieldOfStudy: z.string().optional(),
   skills: z.array(z.string()).optional(),
   yearsOfExperience: z.coerce.number().min(0, "Years of experience cannot be negative").optional(),
-  location: z.string().optional(), 
+  location: z.string().trim().min(1, "Location is required.").optional(), 
   timezone: z.string().optional(),
   primaryGoal: z.enum([
      'Find Teammates for a Project', 
@@ -78,9 +82,45 @@ const editProfileSchema = z.object({
     'DevOps Engineer', 'Other', ''
   ]).optional(),
   links: z.object({
-    githubUsername: z.string().optional(),
-    linkedin: z.string().optional(),
-    portfolio: z.string().optional(),
+    githubUsername: z.string()
+      .trim()
+      .transform(val => {
+        let cleaned = val.replace(/^@/, '');
+        if (cleaned.includes('github.com/')) {
+          cleaned = cleaned.split('github.com/').pop().replace(/\/$/, '');
+        }
+        return cleaned;
+      })
+      .pipe(
+        z.string()
+          .min(1, "GitHub Username is required.")
+          .regex(githubUsernameRegex, "Please enter a valid GitHub username (e.g. octocat).")
+      ),
+    linkedin: z.string()
+      .trim()
+      .transform(val => {
+        if (val && !/^https?:\/\//i.test(val)) {
+          return `https://${val}`;
+        }
+        return val;
+      })
+      .pipe(
+        z.string()
+          .min(1, "LinkedIn Profile URL is required.")
+          .regex(linkedinRegex, "Please enter a valid LinkedIn URL (e.g. https://linkedin.com/in/username).")
+      ),
+    portfolio: z.string()
+      .optional()
+      .transform(val => {
+        if (!val || !val.trim()) return '';
+        let url = val.trim();
+        if (!/^https?:\/\//i.test(url)) return `https://${url}`;
+        return url;
+      })
+      .refine(val => {
+        if (!val) return true;
+        return urlRegex.test(val);
+      }, "Please enter a valid Portfolio URL (e.g. https://yourportfolio.dev)."),
   }).optional(),
 });
 

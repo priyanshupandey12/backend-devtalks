@@ -318,7 +318,43 @@ logger.info(`Successfully fetched connection feed for ${currentUserId}. Found ${
 
 
 
-module.exports = { showpendingConnection, acceptingConnection, choosingCardConnection};
+const getUserConnectionStatus = async (req, res) => {
+  try {
+    const loggedInUser = req.user;
+    const connections = await Connection.find({
+      $or: [
+        { fromuserId: loggedInUser._id },
+        { toconnectionId: loggedInUser._id }
+      ]
+    }).lean();
+
+    const connectedUserIds = [];
+    const pendingUserIds = [];
+
+    connections.forEach(conn => {
+      const otherId = conn.fromuserId.toString() === loggedInUser._id.toString() 
+        ? conn.toconnectionId.toString() 
+        : conn.fromuserId.toString();
+      
+      if (conn.status === 'accepted') {
+        connectedUserIds.push(otherId);
+      } else if (conn.status === 'Interested') {
+        pendingUserIds.push(otherId);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      connectedUserIds,
+      pendingUserIds
+    });
+  } catch (error) {
+    logger.error(`Error in getUserConnectionStatus: ${error.message}`, { stack: error.stack });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+module.exports = { showpendingConnection, acceptingConnection, choosingCardConnection, getUserConnectionStatus };
 
 
 

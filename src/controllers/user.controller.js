@@ -172,24 +172,12 @@ const loginUp=async(req,res)=>{
     const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
     
   
-const loggedInUser = {
-  _id: user._id,
-  firstName: user.firstName,
-  lastName: user.lastName,
-  emailId: user.emailId,
-  photoUrl: user.photoUrl,
-  role: user.role,
-  userRole: user.userRole,
-  experienceLevel: user.experienceLevel,
-  skills: user.skills,
-  gender:user.gender,
-  educationYear: user.educationYear,
-  collegeName: user.collegeName,
-  fieldOfStudy: user.fieldOfStudy,
-  primaryGoal: user.primaryGoal,
-  links: user.links,
-  description: user.description,
-}; 
+    const loggedInUser = user.toObject();
+    delete loggedInUser.password;
+    delete loggedInUser.refreshToken;
+    delete loggedInUser.loginAttempts;
+    delete loggedInUser.lockUntil;
+    delete loggedInUser.__v; 
 const isProduction = process.env.NODE_ENV === 'production';
 
 const accessTokenOptions = {
