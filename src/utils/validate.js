@@ -15,8 +15,17 @@ const signUpSchema = z.object({
     ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate'], 
     { errorMap: () => ({ message: "Please select your current education year." }) }
   ),
-  gender: z.enum(['Male', 'Female', 'Other'], 
-    { errorMap: () => ({ message: "Please select a gender" }) }
+  gender: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        const lower = val.trim().toLowerCase();
+        if (lower === 'male') return 'Male';
+        if (lower === 'female') return 'Female';
+        if (lower === 'other' || lower === 'others') return 'Other';
+      }
+      return val;
+    },
+    z.enum(['Male', 'Female', 'Other'], { errorMap: () => ({ message: "Please select a gender" }) })
   ),
   yearsOfExperience: z.coerce
     .number({ invalid_type_error: "Please enter your years of experience as a number." })
@@ -34,7 +43,19 @@ const loginSchema = z.object({
 const editProfileSchema = z.object({
   firstName: z.string().min(3, "First name must be at least 3 characters").optional(),
   lastName: z.string().optional(),
-  gender: z.enum(["Male", "Female", "Other", ""]).optional(),
+  gender: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        const lower = val.trim().toLowerCase();
+        if (lower === 'male') return 'Male';
+        if (lower === 'female') return 'Female';
+        if (lower === 'other' || lower === 'others') return 'Other';
+        if (lower === '') return '';
+      }
+      return val;
+    },
+    z.enum(["Male", "Female", "Other", ""], { errorMap: () => ({ message: "Please select a valid gender" }) }).optional()
+  ),
   description: z.string().optional(),
   experienceLevel: z.enum(['Student', 'Beginner', 'Intermediate', 'Senior', '']).optional(),
   educationYear: z.enum(['1st Year', '2nd Year', '3rd Year', '4th Year', 'Graduate', '']).optional(),
